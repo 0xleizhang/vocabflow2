@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Ear, FastForward, Languages, Loader2, Pause, Play, Repeat, Rewind, SkipForward, Square } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { clearTTSCache, fetchTTSAudio, fetchWordAnnotation } from '../services/geminiService';
 import { WordToken } from '../types';
-import { fetchWordAnnotation } from '../services/geminiService';
 import { Word } from './Word';
-import { Play, Pause, Square, FastForward, Rewind, MousePointer2, Languages, Ear } from 'lucide-react';
-import { Button } from './Button';
 
 interface ReaderProps {
   rawText: string;
@@ -20,13 +19,33 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
   const [playbackRate, setPlaybackRate] = useState(1.0);
   const [sentences, setSentences] = useState<string[]>([]);
   
-  // Interaction Mode: 'translate' (lookup word) or 'play' (start TTS)
-  const [interactionMode, setInteractionMode] = useState<'translate' | 'play'>('translate');
+  // Interaction Mode: 'reading' (lookup word) or 'listen' (start TTS)
+  const [interactionMode, setInteractionMode] = useState<'reading' | 'listen'>('reading');
+
+  // Hover state for listen mode
+  const [hoveredSentenceIndex, setHoveredSentenceIndex] = useState<number | null>(null);
+
+  // Playback settings
+  const [autoPlay, setAutoPlay] = useState(true);  // Auto play next sentence
+  const [repeatMode, setRepeatMode] = useState(false);  // Repeat mode
+  const [isLoadingAudio, setIsLoadingAudio] = useState(false);  // Loading state for TTS
 
   // Refs for audio control
   const synthRef = useRef<SpeechSynthesis>(window.speechSynthesis);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const isPausedRef = useRef(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const autoPlayRef = useRef(autoPlay);
+  const repeatModeRef = useRef(repeatMode);
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    autoPlayRef.current = autoPlay;
+  }, [autoPlay]);
+
+  useEffect(() => {
+    repeatModeRef.current = repeatMode;
+  }, [repeatMode]);
 
   // Parse text into tokens and sentences on mount or when rawText changes
   useEffect(() => {
@@ -68,57 +87,156 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
     setTokens(newTokens);
     setSentences(finalSentences);
     stopPlayback(); // Reset playback if text changes
+    clearTTSCache(); // Clear audio cache when text changes
   }, [rawText]);
 
   // --- Playback Logic ---
 
   const stopPlayback = useCallback(() => {
     synthRef.current.cancel();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
     setIsPlaying(false);
     setCurrentSentenceIndex(-1);
     isPausedRef.current = false;
   }, []);
 
-  const playSentence = useCallback((index: number) => {
-    if (index >= sentences.length) {
-      stopPlayback();
-      return;
+  // Handle what happens after a sentence finishes playing
+  const handlePlaybackEnd = useCallback((index: number) => {
+    if (isPausedRef.current) return;
+
+    if (repeatModeRef.current && !autoPlayRef.current) {
+      // Only repeat current sentence
+      playSentenceInternal(index);
+    } else if (autoPlayRef.current) {
+      if (index + 1 >= sentences.length) {
+        if (repeatModeRef.current) {
+          // Repeat entire text from beginning
+          playSentenceInternal(0);
+        } else {
+          stopPlayback();
+        }
+      } else {
+        // Play next sentence
+        playSentenceInternal(index + 1);
+      }
+    } else {
+      // No auto, no repeat - stop after current
+      setIsPlaying(false);
+      setCurrentSentenceIndex(-1);
     }
+  }, [sentences.length, stopPlayback]);
 
-    // Cancel previous
-    synthRef.current.cancel();
-
+  // Play using browser TTS (fallback)
+  const playSentenceWithBrowserTTS = useCallback((index: number) => {
     const text = sentences[index];
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-US';
     utterance.rate = playbackRate;
-    
+
     utterance.onstart = () => {
       setCurrentSentenceIndex(index);
     };
 
     utterance.onend = () => {
-       // Automatically play next
-       // Check if we are still 'playing' state (user didn't click stop)
-       if (!isPausedRef.current) {
-          playSentence(index + 1);
-       }
+      handlePlaybackEnd(index);
     };
 
     utterance.onerror = (e) => {
-      // Ignore errors caused by canceling (e.g. when clicking another sentence or stop)
       if (e.error === 'canceled' || e.error === 'interrupted') {
         return;
       }
-
       console.error("TTS Error", e);
-      // Skip to next on error
-      playSentence(index + 1);
+      handlePlaybackEnd(index);
     };
 
     utteranceRef.current = utterance;
     synthRef.current.speak(utterance);
-  }, [sentences, playbackRate, stopPlayback]);
+  }, [sentences, playbackRate, handlePlaybackEnd]);
+
+  // Preload next sentence audio
+  const preloadNextSentence = useCallback((currentIndex: number) => {
+    if (!apiKey || !autoPlayRef.current) return;
+    const nextIndex = currentIndex + 1;
+    if (nextIndex < sentences.length) {
+      // Fire and forget - just populate the cache
+      fetchTTSAudio(sentences[nextIndex], apiKey).catch(() => {
+        // Ignore preload errors
+      });
+    }
+  }, [apiKey, sentences]);
+
+  // Play using LLM TTS with fallback to browser TTS
+  const playSentenceInternal = useCallback(async (index: number) => {
+    if (index >= sentences.length) {
+      stopPlayback();
+      return;
+    }
+
+    // Cancel any previous playback
+    synthRef.current.cancel();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
+    setCurrentSentenceIndex(index);
+    setIsLoadingAudio(true);
+
+    const text = sentences[index];
+
+    // Try LLM TTS first if API key is available
+    if (apiKey) {
+      try {
+        const { data: audioData, mimeType } = await fetchTTSAudio(text, apiKey);
+
+        // Check if we were stopped during the fetch
+        if (isPausedRef.current) {
+          setIsLoadingAudio(false);
+          return;
+        }
+
+        // Preload next sentence while current one plays
+        preloadNextSentence(index);
+
+        // Create blob and play with correct mimeType
+        const blob = new Blob([audioData], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audio.playbackRate = playbackRate;
+
+        audio.onended = () => {
+          URL.revokeObjectURL(url);
+          handlePlaybackEnd(index);
+        };
+
+        audio.onerror = () => {
+          URL.revokeObjectURL(url);
+          console.warn("LLM audio playback failed, falling back to browser TTS");
+          playSentenceWithBrowserTTS(index);
+        };
+
+        audioRef.current = audio;
+        setIsLoadingAudio(false);
+        await audio.play();
+        return;
+      } catch (error) {
+        console.warn("LLM TTS failed, falling back to browser TTS:", error);
+        setIsLoadingAudio(false);
+      }
+    }
+
+    // Fallback to browser TTS
+    setIsLoadingAudio(false);
+    playSentenceWithBrowserTTS(index);
+  }, [sentences, playbackRate, apiKey, stopPlayback, handlePlaybackEnd, playSentenceWithBrowserTTS, preloadNextSentence]);
+
+  // Public playSentence function
+  const playSentence = useCallback((index: number) => {
+    playSentenceInternal(index);
+  }, [playSentenceInternal]);
 
   const togglePlay = () => {
     if (isPlaying) {
@@ -168,7 +286,7 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
     // 2. If user is holding Ctrl/Command key (Shortcut)
     // THEN -> Play Sentence
     const isModifierPressed = e.ctrlKey || e.metaKey;
-    const shouldPlay = interactionMode === 'play' || isModifierPressed;
+    const shouldPlay = interactionMode === 'listen' || isModifierPressed;
 
     if (shouldPlay) {
       if (token.sentenceIndex >= 0 && token.sentenceIndex < sentences.length) {
@@ -232,14 +350,18 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
           <p className="whitespace-pre-wrap">
             {tokens.map((token, index) => {
               const isSentenceActive = token.sentenceIndex === currentSentenceIndex;
-              
+              const isSentenceHovered = interactionMode === 'listen' && token.sentenceIndex === hoveredSentenceIndex;
+              const shouldHighlight = isSentenceActive || isSentenceHovered;
+
               if (!token.isWord) {
-                // Also highlight punctuation if sentence is active
+                // Also highlight punctuation if sentence is active or hovered
                 return (
-                    <span 
-                        key={token.id} 
-                        className={`transition-colors duration-300 ${isSentenceActive ? 'bg-brand-100/80' : 'text-slate-500'} cursor-text`}
+                    <span
+                        key={token.id}
+                        className={`transition-colors duration-300 ${shouldHighlight ? 'bg-brand-100/80' : 'text-slate-500'} ${interactionMode === 'listen' ? 'cursor-pointer' : 'cursor-text'}`}
                         onClick={(e) => handleWordClick(e, index)}
+                        onMouseEnter={() => interactionMode === 'listen' && setHoveredSentenceIndex(token.sentenceIndex)}
+                        onMouseLeave={() => interactionMode === 'listen' && setHoveredSentenceIndex(null)}
                     >
                         {token.text}
                     </span>
@@ -247,12 +369,13 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
               }
 
               return (
-                <Word 
+                <Word
                   key={token.id}
                   token={token}
                   onClick={(e) => handleWordClick(e, index)}
-                  isHighlighted={isSentenceActive}
+                  isHighlighted={shouldHighlight}
                   interactionMode={interactionMode}
+                  onHoverSentence={setHoveredSentenceIndex}
                 />
               );
             })}
@@ -260,8 +383,8 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
         </div>
         
         <div className="mt-8 pt-4 border-t border-slate-100 text-center text-sm text-slate-400 font-sans">
-          Click to {interactionMode === 'translate' ? 'translate' : 'read'} • 
-          <span className="hidden md:inline ml-1">Hold Ctrl+Click to {interactionMode === 'translate' ? 'read' : 'translate'}</span>
+          Click to {interactionMode === 'reading' ? 'reading' : 'listen'} •
+          <span className="hidden md:inline ml-1">Hold Ctrl+Click to {interactionMode === 'reading' ? 'listen' : 'reading'}</span>
         </div>
       </div>
 
@@ -271,21 +394,21 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
             
             {/* 1. Mode Switcher (Left Side) */}
             <div className="flex bg-slate-100 p-1 rounded-lg shrink-0">
-               <button 
-                 onClick={() => setInteractionMode('translate')}
-                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'translate' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                 title="Translate Mode"
-               >
-                 <Languages size={16} />
-                 <span className="hidden sm:inline">Translate</span>
-               </button>
-               <button 
-                 onClick={() => setInteractionMode('play')}
-                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'play' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                 title="Read Mode"
+               <button
+                 onClick={() => setInteractionMode('listen')}
+                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'listen' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                 title="Listen Mode"
                >
                  <Ear size={16} />
-                 <span className="hidden sm:inline">Read</span>
+                 <span className="hidden sm:inline">Listen</span>
+               </button>
+               <button
+                 onClick={() => setInteractionMode('reading')}
+                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'reading' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                 title="Reading Mode"
+               >
+                 <Languages size={16} />
+                 <span className="hidden sm:inline">Reading</span>
                </button>
             </div>
 
@@ -296,7 +419,7 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
             <div className="flex flex-1 items-center justify-between gap-2 md:gap-4">
                 {/* Speed */}
                 <div className="flex items-center space-x-0.5">
-                    <button 
+                    <button
                         onClick={() => handleRateChange(Math.max(0.7, playbackRate - 0.1))}
                         className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
                     >
@@ -305,7 +428,7 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
                     <span className="text-xs font-mono font-medium text-slate-600 w-8 text-center select-none">
                         {playbackRate.toFixed(1)}x
                     </span>
-                    <button 
+                    <button
                         onClick={() => handleRateChange(Math.min(2.0, playbackRate + 0.1))}
                         className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
                     >
@@ -313,9 +436,27 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
                     </button>
                 </div>
 
+                {/* Auto & Repeat Controls */}
+                <div className="flex items-center gap-1">
+                    <button
+                        onClick={() => setAutoPlay(!autoPlay)}
+                        className={`p-1.5 rounded-lg transition-colors ${autoPlay ? 'text-brand-600 bg-brand-50' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}
+                        title={autoPlay ? "Auto: ON - Will play next sentence" : "Auto: OFF - Will stop after current sentence"}
+                    >
+                        <SkipForward size={16} />
+                    </button>
+                    <button
+                        onClick={() => setRepeatMode(!repeatMode)}
+                        className={`p-1.5 rounded-lg transition-colors ${repeatMode ? 'text-brand-600 bg-brand-50' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}
+                        title={repeatMode ? "Repeat: ON - Will loop" : "Repeat: OFF - Will stop at end"}
+                    >
+                        <Repeat size={16} />
+                    </button>
+                </div>
+
                 {/* Play/Stop */}
                 <div className="flex items-center gap-2">
-                     <button 
+                     <button
                         onClick={stopPlayback}
                         className="p-2 md:p-2.5 text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
                         title="Stop"
@@ -323,12 +464,13 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
                         <Square size={16} fill="currentColor" />
                      </button>
 
-                     <button 
+                     <button
                         onClick={togglePlay}
-                        className="p-3 bg-brand-600 hover:bg-brand-700 text-white rounded-full shadow-lg hover:shadow-brand-500/30 transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center"
-                        title={isPlaying ? "Pause" : "Play Full Text"}
+                        disabled={isLoadingAudio}
+                        className={`p-3 text-white rounded-full shadow-lg transition-all transform flex items-center justify-center ${isLoadingAudio ? 'bg-brand-400 cursor-wait' : 'bg-brand-600 hover:bg-brand-700 hover:shadow-brand-500/30 hover:scale-105 active:scale-95'}`}
+                        title={isLoadingAudio ? "Loading audio..." : isPlaying ? "Pause" : "Play Full Text"}
                      >
-                        {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-0.5" />}
+                        {isLoadingAudio ? <Loader2 size={20} className="animate-spin" /> : isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-0.5" />}
                      </button>
                 </div>
             </div>

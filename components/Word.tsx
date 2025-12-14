@@ -7,12 +7,28 @@ interface WordProps {
   token: WordToken;
   onClick: (e: React.MouseEvent) => void;
   isHighlighted?: boolean;
-  interactionMode: 'translate' | 'play';
+  interactionMode: 'reading' | 'listen';
+  onHoverSentence?: (sentenceIndex: number | null) => void;
 }
 
-export const Word: React.FC<WordProps> = ({ token, onClick, isHighlighted = false, interactionMode }) => {
+export const Word: React.FC<WordProps> = ({ token, onClick, isHighlighted = false, interactionMode, onHoverSentence }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+
+  // Handle sentence hover in listen mode
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+    if (interactionMode === 'listen' && onHoverSentence) {
+      onHoverSentence(token.sentenceIndex);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    if (interactionMode === 'listen' && onHoverSentence) {
+      onHoverSentence(null);
+    }
+  };
 
   // Helper booleans
   const isAnnotated = token.status === 'success' && !!token.annotation;
@@ -36,8 +52,8 @@ export const Word: React.FC<WordProps> = ({ token, onClick, isHighlighted = fals
 
   // Determine cursor style based on mode and status
   let cursorClass = '';
-  if (interactionMode === 'play') {
-    cursorClass = 'cursor-pointer'; // Finger pointer for "Play"
+  if (interactionMode === 'listen') {
+    cursorClass = 'cursor-pointer'; // Finger pointer for "Listen"
   } else if (isAnnotated) {
     cursorClass = 'cursor-help'; // Question mark for "Show Definition"
   } else if (isLoading) {
@@ -50,12 +66,12 @@ export const Word: React.FC<WordProps> = ({ token, onClick, isHighlighted = fals
     <span className={`relative inline-block align-baseline transition-colors duration-300 rounded-sm ${isHighlighted ? 'bg-brand-100/80 pt-0.5 -mt-0.5' : ''}`}>
       {/* The Interactive Word Text */}
       <span
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         onClick={(e) => {
           e.stopPropagation();
-          // Allow clicking even if annotated to trigger play mode if active
-          if (interactionMode === 'play' || (!isAnnotated && !isLoading)) {
+          // Allow clicking even if annotated to trigger listen mode if active
+          if (interactionMode === 'listen' || (!isAnnotated && !isLoading)) {
             onClick(e);
           }
         }}
@@ -66,7 +82,7 @@ export const Word: React.FC<WordProps> = ({ token, onClick, isHighlighted = fals
           ${isError ? 'text-red-500 decoration-red-300 underline decoration-wavy' : ''}
           ${isAnnotated ? 'text-brand-800 font-semibold border-b-2 border-brand-200' : ''}
           ${!isAnnotated && !isLoading && !isError ? 'hover:text-brand-800 hover:bg-black/5' : ''}
-          ${interactionMode === 'play' && !isLoading ? 'hover:underline decoration-brand-300 decoration-2 underline-offset-2' : ''}
+          ${interactionMode === 'listen' && !isLoading ? 'hover:underline decoration-brand-300 decoration-2 underline-offset-2' : ''}
         `}
       >
         {token.text}
@@ -96,7 +112,7 @@ export const Word: React.FC<WordProps> = ({ token, onClick, isHighlighted = fals
       )}
 
       {/* Hover Tooltip - Definition Only */}
-      {isAnnotated && token.annotation && interactionMode === 'translate' && (
+      {isAnnotated && token.annotation && interactionMode === 'reading' && (
         <div 
           className={`
             absolute bottom-full left-0 mb-1 z-50 whitespace-nowrap
