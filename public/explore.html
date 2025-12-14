@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explore - Philingo English Reader</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;1,400&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .text-card {
+            transition: all 0.2s ease;
+        }
+
+        .text-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+        }
+
+        .difficulty-beginner { background: #dcfce7; color: #166534; }
+        .difficulty-intermediate { background: #fef3c7; color: #92400e; }
+        .difficulty-advanced { background: #fee2e2; color: #991b1b; }
+
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Merriweather', 'serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
+    <div class="max-w-6xl mx-auto px-4 py-12">
+        <!-- Header -->
+        <div class="mb-10 animate-fade-in">
+            <a href="/" class="inline-flex items-center text-slate-600 hover:text-slate-900 mb-6 transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Back to App
+            </a>
+
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-sky-500 to-cyan-600 rounded-xl flex items-center justify-center relative">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    <span class="absolute -bottom-1 -right-1 bg-white text-sky-600 text-[10px] font-bold px-1 rounded shadow-sm">Ph</span>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold text-slate-900">Explore Texts</h1>
+                    <p class="text-slate-600 mt-1">Choose a text to start practicing your English reading and pronunciation</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Text Cards Grid -->
+        <div class="grid md:grid-cols-2 gap-6" id="textCards">
+            <!-- Cards will be inserted here by JavaScript -->
+        </div>
+    </div>
+
+    <script>
+        // Text snippets for practice
+        const textSnippets = [
+            {
+                id: 1,
+                title: "The Power of Habit",
+                category: "Self-Improvement",
+                difficulty: "beginner",
+                wordCount: 85,
+                text: `Habits are the invisible architecture of daily life. We repeat about 40 percent of our behavior almost daily. When we understand how habits work, we can change them. The key is to identify the cue, the routine, and the reward. Once you recognize these patterns, you can start to shift your behaviors. Small changes in daily habits can lead to remarkable results over time.`,
+                preview: "Habits are the invisible architecture of daily life..."
+            },
+            {
+                id: 2,
+                title: "Climate Change Explained",
+                category: "Science",
+                difficulty: "intermediate",
+                wordCount: 95,
+                text: `Climate change refers to long-term shifts in global temperatures and weather patterns. While natural factors have always influenced Earth's climate, human activities have been the primary driver since the industrial revolution. The burning of fossil fuels releases greenhouse gases, which trap heat in the atmosphere. Scientists warn that without significant action to reduce emissions, we may face more extreme weather events, rising sea levels, and disruptions to ecosystems worldwide.`,
+                preview: "Climate change refers to long-term shifts in global temperatures..."
+            },
+            {
+                id: 3,
+                title: "The Art of Communication",
+                category: "Business",
+                difficulty: "intermediate",
+                wordCount: 88,
+                text: `Effective communication is the cornerstone of successful relationships, both personal and professional. It involves not just speaking clearly, but also listening actively. When we truly listen, we show respect and build trust. Good communicators also pay attention to nonverbal cues like body language and tone of voice. In today's digital age, written communication skills are equally important. The ability to express ideas concisely and persuasively can open many doors.`,
+                preview: "Effective communication is the cornerstone of successful relationships..."
+            },
+            {
+                id: 4,
+                title: "Artificial Intelligence",
+                category: "Technology",
+                difficulty: "advanced",
+                wordCount: 102,
+                text: `Artificial intelligence represents one of the most transformative technologies of our time. Machine learning algorithms can now recognize patterns in vast datasets, enabling applications from medical diagnosis to autonomous vehicles. However, this rapid advancement raises important ethical questions. How do we ensure AI systems are fair and unbiased? Who is responsible when an algorithm makes a harmful decision? As these technologies become more integrated into society, we must carefully consider their implications for privacy, employment, and human autonomy.`,
+                preview: "Artificial intelligence represents one of the most transformative technologies..."
+            },
+            {
+                id: 5,
+                title: "Mindfulness Meditation",
+                category: "Wellness",
+                difficulty: "beginner",
+                wordCount: 78,
+                text: `Mindfulness is the practice of being fully present in the moment. It means paying attention to your thoughts and feelings without judgment. Regular meditation can reduce stress and improve focus. To begin, find a quiet place and sit comfortably. Close your eyes and focus on your breath. When your mind wanders, gently bring it back. Even five minutes a day can make a difference in your mental well-being.`,
+                preview: "Mindfulness is the practice of being fully present in the moment..."
+            },
+            {
+                id: 6,
+                title: "The Future of Space Exploration",
+                category: "Science",
+                difficulty: "advanced",
+                wordCount: 110,
+                text: `Space exploration is entering an unprecedented era of discovery and innovation. Private companies like SpaceX and Blue Origin are revolutionizing access to orbit, while NASA's Artemis program aims to return humans to the Moon. Beyond our lunar neighbor, Mars beckons as the next frontier for human settlement. Scientists are developing technologies for sustainable habitats, in-situ resource utilization, and protecting astronauts from cosmic radiation during long-duration missions. The challenges are immense, but so too are the potential rewards: new scientific knowledge, technological spinoffs, and perhaps one day, a multi-planetary civilization.`,
+                preview: "Space exploration is entering an unprecedented era of discovery..."
+            },
+            {
+                id: 7,
+                title: "Coffee Culture Around the World",
+                category: "Culture",
+                difficulty: "beginner",
+                wordCount: 82,
+                text: `Coffee is more than just a beverage; it's a global cultural phenomenon. In Italy, espresso is a quick ritual enjoyed at the bar. Turkish coffee is thick and sweet, often used for fortune-telling. In Ethiopia, the coffee ceremony is an elaborate social event lasting hours. Japanese kiss cafes pair coffee with cat companions. Whether you prefer a simple black coffee or an elaborate latte art creation, this beloved drink connects people across cultures and continents.`,
+                preview: "Coffee is more than just a beverage; it's a global cultural phenomenon..."
+            },
+            {
+                id: 8,
+                title: "The Psychology of Decision Making",
+                category: "Psychology",
+                difficulty: "intermediate",
+                wordCount: 92,
+                text: `Every day, we make thousands of decisions, from trivial choices to life-changing ones. Psychologists have discovered that our decision-making is often influenced by cognitive biases we're not aware of. Confirmation bias leads us to seek information that supports our existing beliefs. The anchoring effect causes us to rely too heavily on the first piece of information we encounter. Understanding these mental shortcuts can help us make more rational choices and avoid common pitfalls in our thinking.`,
+                preview: "Every day, we make thousands of decisions..."
+            }
+        ];
+
+        // Encode text for URL (same as App.tsx)
+        function encodeTextForUrl(text) {
+            try {
+                const encoded = btoa(encodeURIComponent(text).replace(/%([0-9A-F]{2})/g,
+                    (_, p1) => String.fromCharCode(parseInt(p1, 16))));
+                return encoded;
+            } catch {
+                return '';
+            }
+        }
+
+        // Get difficulty badge class
+        function getDifficultyClass(difficulty) {
+            switch(difficulty) {
+                case 'beginner': return 'difficulty-beginner';
+                case 'intermediate': return 'difficulty-intermediate';
+                case 'advanced': return 'difficulty-advanced';
+                default: return 'difficulty-beginner';
+            }
+        }
+
+        // Get difficulty label
+        function getDifficultyLabel(difficulty) {
+            switch(difficulty) {
+                case 'beginner': return 'Beginner';
+                case 'intermediate': return 'Intermediate';
+                case 'advanced': return 'Advanced';
+                default: return 'Beginner';
+            }
+        }
+
+        // Render text cards
+        function renderCards() {
+            const container = document.getElementById('textCards');
+
+            textSnippets.forEach((snippet, index) => {
+                const encodedText = encodeTextForUrl(snippet.text);
+                const card = document.createElement('div');
+                card.className = 'text-card bg-white rounded-xl shadow-md overflow-hidden border border-slate-200 animate-fade-in';
+                card.style.animationDelay = `${index * 0.1}s`;
+
+                card.innerHTML = `
+                    <div class="p-6">
+                        <div class="flex items-start justify-between mb-3">
+                            <div>
+                                <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">${snippet.category}</span>
+                                <h3 class="text-xl font-semibold text-slate-900 mt-1">${snippet.title}</h3>
+                            </div>
+                            <span class="px-2 py-1 text-xs font-medium rounded-full ${getDifficultyClass(snippet.difficulty)}">
+                                ${getDifficultyLabel(snippet.difficulty)}
+                            </span>
+                        </div>
+
+                        <p class="text-slate-600 text-sm leading-relaxed mb-4 font-serif line-clamp-3">
+                            "${snippet.preview}"
+                        </p>
+
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-slate-400">${snippet.wordCount} words</span>
+                            <a href="/?t=${encodedText}"
+                               class="inline-flex items-center px-4 py-2 bg-brand-500 text-white text-sm font-medium rounded-lg hover:bg-brand-600 transition-colors">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                Start Practice
+                            </a>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', renderCards);
+    </script>
+</body>
+</html>

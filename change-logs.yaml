@@ -1,8 +1,137 @@
-project: VocabFlow English Reader
+project: Philingo English Reader
 description: An AI-powered English reading application with vocabulary learning and TTS features
 repository: 0xleizhang/vocabflow2
 
 changelog:
+  - version: 0.7.0
+    date: 2025-12-14
+    commit: a76f2ce
+    author: Lei Zhang
+    type: feature
+    summary: Enhanced UI with motivational quote and improved annotation caching
+    changes:
+      - area: App Component
+        description: Added motivational quote to main interface
+        improvements:
+          - Integrated motivational quote to enhance user engagement
+          - Improved overall user interface experience
+      
+      - area: API Key Modal
+        description: Enhanced API key configuration interface
+        improvements:
+          - Improved modal design and functionality
+          - Better user experience for API key management
+      
+      - area: Writing Mode
+        description: Refined writing mode UI and interactions
+        improvements:
+          - Enhanced layout and component structure
+          - Improved user feedback and interaction design
+      
+      - area: Gemini Service
+        description: Significantly improved annotation caching mechanism
+        improvements:
+          - Implemented robust annotation caching system
+          - Added cache management and optimization
+          - Enhanced performance for vocabulary annotations
+          - Reduced API calls through intelligent caching
+      
+      - area: Word Mastery Service
+        description: Enhanced word mastery tracking
+        improvements:
+          - Improved mastery level calculation
+          - Better data persistence and management
+
+  - version: 0.6.0
+    date: 2025-12-14
+    commit: e6ecc9c
+    author: Lei Zhang
+    type: feature
+    summary: Implemented writing mode with word mastery tracking
+    changes:
+      - area: Writing Mode Component
+        description: Created new writing mode for vocabulary practice
+        improvements:
+          - Implemented interactive fill-in-the-blank exercises
+          - Added word mastery tracking system
+          - Created engaging writing practice interface
+          - Integrated with vocabulary learning workflow
+      
+      - area: Reader Component
+        description: Enhanced reader with writing mode integration
+        improvements:
+          - Added mode switching between reading and writing
+          - Improved component structure for mode handling
+          - Enhanced user interaction flow
+      
+      - area: Feedback Panel
+        description: Enhanced feedback panel functionality
+        improvements:
+          - Improved feedback display and interaction
+          - Better integration with learning modes
+      
+      - area: Word Mastery Service
+        description: Implemented comprehensive word mastery tracking system
+        improvements:
+          - Created mastery level calculation algorithm
+          - Added progress tracking and persistence
+          - Implemented word selection for practice
+          - Enhanced learning analytics
+      
+      - area: Type Definitions
+        description: Extended type definitions for writing mode
+        improvements:
+          - Added new types for writing mode functionality
+          - Improved type safety across components
+
+  - version: 0.5.0
+    date: 2025-12-14
+    commit: 87dd922
+    author: Lei Zhang
+    type: feature
+    summary: Added about page generator and audio recording with VAD
+    changes:
+      - area: About Page Generator
+        description: Implemented automated about page generation
+        improvements:
+          - Created script to generate HTML about page from YAML changelog
+          - Automated documentation generation process
+          - Enhanced project documentation
+      
+      - area: Audio Recording Service
+        description: Implemented audio recording with Voice Activity Detection
+        improvements:
+          - Created audio recording service with VAD technology
+          - Implemented automatic silence detection
+          - Added recording session management
+          - Enhanced audio input handling
+      
+      - area: Reader Component
+        description: Significant enhancements to reader functionality
+        improvements:
+          - Improved reading interface and interactions
+          - Enhanced component structure
+          - Better user experience
+      
+      - area: Feedback Panel
+        description: Enhanced feedback panel with new features
+        improvements:
+          - Improved feedback collection and display
+          - Better user interaction design
+      
+      - area: Gemini Service
+        description: Major service improvements and optimizations
+        improvements:
+          - Enhanced API integration
+          - Improved service reliability
+          - Better error handling
+      
+      - area: Dependencies
+        description: Added new project dependencies
+        improvements:
+          - Added required packages for new features
+          - Updated dependency configurations
+
   - version: 0.4.0
     date: 2025-12-14
     commit: 7e3599e
@@ -72,10 +201,10 @@ changelog:
     commit: 4b6eb08
     author: Lei Zhang
     type: feature
-    summary: Initial VocabFlow English Reader project
+    summary: Initial Philingo English Reader project
     changes:
       - area: Core Features
-        description: Initialize VocabFlow English Reader project
+        description: Initialize Philingo English Reader project
         improvements:
           - Created React + TypeScript + Vite application
           - Implemented basic reading interface
@@ -104,15 +233,21 @@ features_summary:
     - AI-powered English reading interface
     - Text-to-Speech (TTS) functionality with audio caching
     - Vocabulary word highlighting and annotation
-    - Multiple interaction modes (reading and listen)
+    - Multiple interaction modes (reading, listen, and writing)
     - Auto-play and repeat modes for enhanced learning
+    - Writing mode with fill-in-the-blank exercises
+    - Word mastery tracking and progress analytics
+    - Audio recording with Voice Activity Detection (VAD)
     - Local storage persistence for user data
+    - Intelligent annotation caching for performance
+    - Automated about page generation from changelog
 
   technical_stack:
     - frontend: React + TypeScript + Vite
     - ai_service: Google Gemini API
     - styling: Tailwind CSS (implied from components)
-    - audio: TTS with PCM to WAV conversion
+    - audio: TTS with PCM to WAV conversion, audio recording with VAD
+    - documentation: YAML-based changelog with HTML generation
 
   development_highlights:
     - Progressive feature enhancement
@@ -120,6 +255,9 @@ features_summary:
     - Code quality and maintainability improvements
     - Audio caching for optimized performance
     - Data persistence for better UX
+    - Comprehensive word mastery tracking system
+    - Advanced annotation caching mechanism
+    - Voice Activity Detection for audio recording
 
 iteration_timeline:
   phase_1:
@@ -139,7 +277,7 @@ iteration_timeline:
       - Improved data retention
 
   phase_3:
-    period: 2025-12-14
+    period: 2025-12-14 (Morning)
     focus: Code quality and advanced features
     achievements:
       - Refactored code structure
@@ -147,3 +285,31 @@ iteration_timeline:
       - Implemented audio caching
       - Added multiple interaction modes
       - Improved audio quality
+
+  phase_4:
+    period: 2025-12-14 (Afternoon)
+    focus: Advanced learning features and audio capabilities
+    achievements:
+      - Implemented about page generation system
+      - Added audio recording with Voice Activity Detection
+      - Enhanced reader and feedback components
+      - Improved Gemini service integration
+
+  phase_5:
+    period: 2025-12-14 (Late Afternoon)
+    focus: Writing mode and word mastery system
+    achievements:
+      - Created writing mode with interactive exercises
+      - Implemented comprehensive word mastery tracking
+      - Enhanced feedback panel
+      - Improved learning analytics
+
+  phase_6:
+    period: 2025-12-14 (Evening)
+    focus: UI/UX enhancements and performance optimization
+    achievements:
+      - Added motivational quote feature
+      - Implemented advanced annotation caching
+      - Enhanced API key management interface
+      - Refined writing mode UI
+      - Improved word mastery tracking
