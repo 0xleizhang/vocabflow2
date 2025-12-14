@@ -1,6 +1,6 @@
+import { AlertCircle, Play, Square, Trash2, TrendingUp } from 'lucide-react';
 import React, { useRef, useState } from 'react';
 import { PronunciationFeedback } from '../types';
-import { Trash2, TrendingUp, AlertCircle, Play, Square } from 'lucide-react';
 
 interface FeedbackPanelProps {
   feedbackList: PronunciationFeedback[];
@@ -22,6 +22,27 @@ const getScoreBorderColor = (score: number): string => {
 export const FeedbackPanel: React.FC<FeedbackPanelProps> = ({ feedbackList, onClear }) => {
   const [playingId, setPlayingId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const handleSpeakWord = (word: string) => {
+    const synth = window.speechSynthesis;
+    if (!synth) {
+      console.warn("Text-to-speech not supported in this browser.");
+      return;
+    }
+
+    // Cancel any ongoing speech
+    synth.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(word);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.9;
+
+    utterance.onerror = (e) => {
+      console.error("TTS Error:", e);
+    };
+
+    synth.speak(utterance);
+  };
 
   const handlePlayRecording = (feedback: PronunciationFeedback) => {
     if (!feedback.audioUrl) return;
@@ -140,9 +161,13 @@ export const FeedbackPanel: React.FC<FeedbackPanelProps> = ({ feedbackList, onCl
                   <div className="space-y-1">
                     {feedback.errors.map((error, errIndex) => (
                       <div key={errIndex} className="flex items-start gap-2 text-xs">
-                        <span className="font-mono font-semibold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
+                        <button
+                          onClick={() => handleSpeakWord(error.word)}
+                          className="font-mono font-semibold text-red-600 bg-red-50 px-1.5 py-0.5 rounded hover:bg-red-100 transition-colors cursor-pointer"
+                          title="点击发音"
+                        >
                           {error.word}
-                        </span>
+                        </button>
                         <span className="text-slate-600 flex-1">
                           {error.issue}
                         </span>

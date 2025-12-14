@@ -1,10 +1,12 @@
-import { Ear, FastForward, Languages, Loader2, Mic, Pause, Play, Repeat, Rewind, SkipForward, Square } from 'lucide-react';
+import { Ear, FastForward, Languages, Loader2, Mic, Pause, PenLine, Play, Repeat, Rewind, SkipForward, Square } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { analyzePronunciation, clearTTSCache, fetchTTSAudio, fetchWordAnnotation } from '../services/geminiService';
 import { audioRecorder } from '../services/audioRecordingService';
+import { addLookedUpWord } from '../services/wordMasteryService';
 import { InteractionMode, PronunciationFeedback, WordError, WordToken } from '../types';
 import { FeedbackPanel } from './FeedbackPanel';
 import { Word } from './Word';
+import { WritingMode } from './WritingMode';
 
 interface ReaderProps {
   rawText: string;
@@ -413,6 +415,9 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
 
       const annotation = await fetchWordAnnotation(token.text, contextString, apiKey);
 
+      // Save to word mastery for writing mode
+      addLookedUpWord(rawText, token.text, annotation);
+
       setTokens(prev => prev.map((t, i) =>
         i === tokenIndex
           ? { ...t, status: 'success', annotation }
@@ -438,11 +443,65 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
     );
   }
 
+  // Detect Mac for keyboard shortcut hint
+  const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+  const modifierKey = isMac ? '⌘' : 'Ctrl';
+
   // Clear feedback when switching away from test mode
   const handleClearFeedback = useCallback(() => {
     setFeedbackList([]);
     setPronunciationErrors(new Map());
   }, []);
+
+  // Writing mode has its own component
+  if (interactionMode === 'writing') {
+    return (
+      <div className="w-full mx-auto pb-32 relative max-w-4xl">
+        <WritingMode rawText={rawText} tokens={tokens} />
+
+        {/* Floating Control Bar for Writing Mode */}
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40 w-full max-w-2xl px-4">
+          <div className="bg-white/95 backdrop-blur-md border border-slate-200 shadow-2xl rounded-2xl p-2 md:p-3 flex items-center justify-center ring-1 ring-black/5 gap-4">
+            {/* Mode Switcher */}
+            <div className="flex bg-slate-100 p-1 rounded-lg">
+               <button
+                 onClick={() => setInteractionMode('listen')}
+                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'listen' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                 title="Listen Mode"
+               >
+                 <Ear size={16} />
+                 <span className="hidden sm:inline">Listen</span>
+               </button>
+               <button
+                 onClick={() => setInteractionMode('reading')}
+                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'reading' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                 title="Reading Mode"
+               >
+                 <Languages size={16} />
+                 <span className="hidden sm:inline">Reading</span>
+               </button>
+               <button
+                 onClick={() => setInteractionMode('test')}
+                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'test' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                 title="Test Mode - Practice Pronunciation"
+               >
+                 <Mic size={16} />
+                 <span className="hidden sm:inline">Test</span>
+               </button>
+               <button
+                 onClick={() => setInteractionMode('writing')}
+                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'writing' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                 title="Writing Mode - Fill in the blanks"
+               >
+                 <PenLine size={16} />
+                 <span className="hidden sm:inline">Writing</span>
+               </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`w-full mx-auto pb-32 relative ${interactionMode === 'test' ? 'max-w-6xl' : 'max-w-4xl'}`}>
@@ -519,7 +578,7 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
           {!isRecording && !isAnalyzing && (
             <>
               Click to {interactionMode === 'reading' ? 'lookup words' : interactionMode === 'listen' ? 'listen' : 'test pronunciation'} •
-              <span className="hidden md:inline ml-1">Hold Ctrl+Click to {interactionMode === 'listen' ? 'lookup words' : 'listen'}</span>
+              <span className="hidden md:inline ml-1">Hold {modifierKey}+Click to {interactionMode === 'listen' ? 'lookup words' : 'listen'}</span>
             </>
           )}
         </div>
@@ -566,15 +625,20 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
                  <Mic size={16} />
                  <span className="hidden sm:inline">Test</span>
                </button>
+               <button
+                 onClick={() => setInteractionMode('writing')}
+                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'writing' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                 title="Writing Mode - Fill in the blanks"
+               >
+                 <PenLine size={16} />
+                 <span className="hidden sm:inline">Writing</span>
+               </button>
             </div>
 
-            {/* Separator - only show in listen mode */}
-            {interactionMode === 'listen' && (
-              <div className="w-px h-8 bg-slate-200 hidden sm:block"></div>
-            )}
+            {/* Separator */}
+            <div className="w-px h-8 bg-slate-200 hidden sm:block"></div>
 
-            {/* 2. Playback Controls (Center/Right) - Only visible in listen mode */}
-            {interactionMode === 'listen' && (
+            {/* 2. Playback Controls (Center/Right) */}
             <div className="flex flex-1 items-center justify-between gap-2 md:gap-4">
                 {/* Speed */}
                 <div className="flex items-center space-x-0.5">
@@ -633,7 +697,6 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
                      </button>
                 </div>
             </div>
-            )}
         </div>
       </div>
     </div>
