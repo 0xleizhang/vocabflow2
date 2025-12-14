@@ -3,6 +3,34 @@ description: An AI-powered English reading application with vocabulary learning 
 repository: 0xleizhang/vocabflow2
 
 changelog:
+  - version: 0.8.0
+    date: 2025-12-14
+    commit: pending
+    author: Lei Zhang
+    type: refactor
+    summary: Standardized interaction mode names for consistency
+    changes:
+      - area: Type Definitions
+        description: Unified mode naming convention to use verb forms
+        improvements:
+          - Renamed 'reading' to 'read' for consistency
+          - Renamed 'test' to 'pronounce' for clarity
+          - Renamed 'writing' to 'write' for consistency
+          - All modes now use verb infinitive form (read, listen, pronounce, write)
+
+      - area: Reader Component
+        description: Updated all mode references and UI labels
+        improvements:
+          - Updated mode button labels to match new names
+          - Updated mode tooltips and hints
+          - Improved mode-related comments
+
+      - area: Word Component
+        description: Updated mode checks for pronunciation practice
+        improvements:
+          - Updated mode comparisons to use new names
+          - Improved code comments for clarity
+
   - version: 0.7.0
     date: 2025-12-14
     commit: a76f2ce
@@ -233,7 +261,7 @@ features_summary:
     - AI-powered English reading interface
     - Text-to-Speech (TTS) functionality with audio caching
     - Vocabulary word highlighting and annotation
-    - Multiple interaction modes (reading, listen, and writing)
+    - Multiple interaction modes (read, listen, pronounce, and write)
     - Auto-play and repeat modes for enhanced learning
     - Writing mode with fill-in-the-blank exercises
     - Word mastery tracking and progress analytics

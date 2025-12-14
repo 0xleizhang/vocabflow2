@@ -14,7 +14,7 @@ export interface WordToken {
 
 export type ViewMode = 'edit' | 'read';
 
-export type InteractionMode = 'reading' | 'listen' | 'test' | 'writing';
+export type InteractionMode = 'read' | 'listen' | 'pronounce' | 'write';
 
 // Word mastery tracking for writing mode
 export interface WordMastery {

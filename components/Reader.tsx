@@ -23,10 +23,10 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
   const [playbackRate, setPlaybackRate] = useState(1.0);
   const [sentences, setSentences] = useState<string[]>([]);
   
-  // Interaction Mode: 'reading' (lookup word), 'listen' (start TTS), or 'test' (pronunciation test)
-  const [interactionMode, setInteractionMode] = useState<InteractionMode>('reading');
+  // Interaction Mode: 'read' (lookup word), 'listen' (start TTS), or 'pronounce' (pronunciation practice)
+  const [interactionMode, setInteractionMode] = useState<InteractionMode>('read');
 
-  // Hover state for listen/test mode
+  // Hover state for listen/pronounce mode
   const [hoveredSentenceIndex, setHoveredSentenceIndex] = useState<number | null>(null);
 
   // Playback settings
@@ -34,7 +34,7 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
   const [repeatMode, setRepeatMode] = useState(false);  // Repeat mode
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);  // Loading state for TTS
 
-  // Test mode states
+  // Pronounce mode states
   const [isRecording, setIsRecording] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [feedbackList, setFeedbackList] = useState<PronunciationFeedback[]>([]);
@@ -291,7 +291,7 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
     audioRecorder.stopRecording();
   }, []);
 
-  // --- Test Mode Handler ---
+  // --- Pronounce Mode Handler ---
   const handleTestModeClick = useCallback(async (sentenceIndex: number) => {
     if (!apiKey) {
       onMissingKey();
@@ -364,7 +364,7 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
 
     // CHECK INTENT:
     // 1. If Interaction Mode is 'test'
-    if (interactionMode === 'test') {
+    if (interactionMode === 'pronounce') {
       // Ctrl+Click in test mode -> Play sentence (listen)
       if (isModifierPressed) {
         if (token.sentenceIndex >= 0 && token.sentenceIndex < sentences.length) {
@@ -447,14 +447,14 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
   const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
   const modifierKey = isMac ? '⌘' : 'Ctrl';
 
-  // Clear feedback when switching away from test mode
+  // Clear feedback when switching away from pronounce mode
   const handleClearFeedback = useCallback(() => {
     setFeedbackList([]);
     setPronunciationErrors(new Map());
   }, []);
 
   // Writing mode has its own component
-  if (interactionMode === 'writing') {
+  if (interactionMode === 'write') {
     return (
       <div className="w-full mx-auto pb-32 relative max-w-4xl">
         <WritingMode rawText={rawText} tokens={tokens} />
@@ -473,28 +473,28 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
                  <span className="hidden sm:inline">Listen</span>
                </button>
                <button
-                 onClick={() => setInteractionMode('reading')}
-                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'reading' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                 title="Reading Mode"
+                 onClick={() => setInteractionMode('read')}
+                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'read' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                 title="Read Mode"
                >
                  <Languages size={16} />
-                 <span className="hidden sm:inline">Reading</span>
+                 <span className="hidden sm:inline">Read</span>
                </button>
                <button
-                 onClick={() => setInteractionMode('test')}
-                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'test' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                 title="Test Mode - Practice Pronunciation"
+                 onClick={() => setInteractionMode('pronounce')}
+                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'pronounce' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                 title="Pronounce Mode - Practice Pronunciation"
                >
                  <Mic size={16} />
-                 <span className="hidden sm:inline">Test</span>
+                 <span className="hidden sm:inline">Pronounce</span>
                </button>
                <button
-                 onClick={() => setInteractionMode('writing')}
-                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'writing' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                 title="Writing Mode - Fill in the blanks"
+                 onClick={() => setInteractionMode('write')}
+                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'write' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                 title="Write Mode - Fill in the blanks"
                >
                  <PenLine size={16} />
-                 <span className="hidden sm:inline">Writing</span>
+                 <span className="hidden sm:inline">Write</span>
                </button>
             </div>
           </div>
@@ -504,15 +504,15 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
   }
 
   return (
-    <div className={`w-full mx-auto pb-32 relative ${interactionMode === 'test' ? 'max-w-6xl' : 'max-w-4xl'}`}>
-      <div className={`flex gap-4 ${interactionMode === 'test' ? 'flex-col lg:flex-row' : ''}`}>
+    <div className={`w-full mx-auto pb-32 relative ${interactionMode === 'pronounce' ? 'max-w-6xl' : 'max-w-4xl'}`}>
+      <div className={`flex gap-4 ${interactionMode === 'pronounce' ? 'flex-col lg:flex-row' : ''}`}>
         {/* Main Text Area */}
-        <div className={`p-4 md:p-8 bg-white shadow-sm rounded-xl min-h-[50vh] relative ${interactionMode === 'test' ? 'flex-1' : 'w-full'}`}>
+        <div className={`p-4 md:p-8 bg-white shadow-sm rounded-xl min-h-[50vh] relative ${interactionMode === 'pronounce' ? 'flex-1' : 'w-full'}`}>
           <div className="prose prose-lg prose-slate max-w-none font-serif leading-loose text-slate-800">
             <p className="whitespace-pre-wrap">
             {tokens.map((token, index) => {
               const isSentenceActive = token.sentenceIndex === currentSentenceIndex;
-              const isSentenceHovered = (interactionMode === 'listen' || interactionMode === 'test') && token.sentenceIndex === hoveredSentenceIndex;
+              const isSentenceHovered = (interactionMode === 'listen' || interactionMode === 'pronounce') && token.sentenceIndex === hoveredSentenceIndex;
               const shouldHighlight = isSentenceActive || isSentenceHovered;
               const tokenError = pronunciationErrors.get(index) || null;
 
@@ -521,10 +521,10 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
                 return (
                     <span
                         key={token.id}
-                        className={`transition-colors duration-300 ${shouldHighlight ? 'bg-brand-100/80' : 'text-slate-500'} ${(interactionMode === 'listen' || interactionMode === 'test') ? 'cursor-pointer' : 'cursor-text'}`}
+                        className={`transition-colors duration-300 ${shouldHighlight ? 'bg-brand-100/80' : 'text-slate-500'} ${(interactionMode === 'listen' || interactionMode === 'pronounce') ? 'cursor-pointer' : 'cursor-text'}`}
                         onClick={(e) => handleWordClick(e, index)}
-                        onMouseEnter={() => (interactionMode === 'listen' || interactionMode === 'test') && setHoveredSentenceIndex(token.sentenceIndex)}
-                        onMouseLeave={() => (interactionMode === 'listen' || interactionMode === 'test') && setHoveredSentenceIndex(null)}
+                        onMouseEnter={() => (interactionMode === 'listen' || interactionMode === 'pronounce') && setHoveredSentenceIndex(token.sentenceIndex)}
+                        onMouseLeave={() => (interactionMode === 'listen' || interactionMode === 'pronounce') && setHoveredSentenceIndex(null)}
                     >
                         {token.text}
                     </span>
@@ -577,7 +577,7 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
           )}
           {!isRecording && !isAnalyzing && (
             <>
-              Click to {interactionMode === 'reading' ? 'lookup words' : interactionMode === 'listen' ? 'listen' : 'test pronunciation'} •
+              Click to {interactionMode === 'read' ? 'lookup words' : interactionMode === 'listen' ? 'listen' : 'pronounce'} •
               <span className="hidden md:inline ml-1">Hold {modifierKey}+Click to {interactionMode === 'listen' ? 'lookup words' : 'listen'}</span>
             </>
           )}
@@ -585,7 +585,7 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
       </div>
 
         {/* Feedback Panel (Right Side) - Only visible in test mode */}
-        {interactionMode === 'test' && (
+        {interactionMode === 'pronounce' && (
           <div className="w-full lg:w-80 bg-white shadow-sm rounded-xl overflow-hidden flex-shrink-0">
             <FeedbackPanel
               feedbackList={feedbackList}
@@ -610,28 +610,28 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
                  <span className="hidden sm:inline">Listen</span>
                </button>
                <button
-                 onClick={() => setInteractionMode('reading')}
-                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'reading' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                 title="Reading Mode"
+                 onClick={() => setInteractionMode('read')}
+                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'read' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                 title="Read Mode"
                >
                  <Languages size={16} />
-                 <span className="hidden sm:inline">Reading</span>
+                 <span className="hidden sm:inline">Read</span>
                </button>
                <button
-                 onClick={() => setInteractionMode('test')}
-                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'test' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                 title="Test Mode - Practice Pronunciation"
+                 onClick={() => setInteractionMode('pronounce')}
+                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'pronounce' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                 title="Pronounce Mode - Practice Pronunciation"
                >
                  <Mic size={16} />
-                 <span className="hidden sm:inline">Test</span>
+                 <span className="hidden sm:inline">Pronounce</span>
                </button>
                <button
-                 onClick={() => setInteractionMode('writing')}
-                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'writing' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                 title="Writing Mode - Fill in the blanks"
+                 onClick={() => setInteractionMode('write')}
+                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'write' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                 title="Write Mode - Fill in the blanks"
                >
                  <PenLine size={16} />
-                 <span className="hidden sm:inline">Writing</span>
+                 <span className="hidden sm:inline">Write</span>
                </button>
             </div>
 

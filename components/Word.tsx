@@ -16,17 +16,17 @@ export const Word: React.FC<WordProps> = ({ token, onClick, isHighlighted = fals
   const [isHovered, setIsHovered] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // Handle sentence hover in listen/test mode
+  // Handle sentence hover in listen/pronounce mode
   const handleMouseEnter = () => {
     setIsHovered(true);
-    if ((interactionMode === 'listen' || interactionMode === 'test') && onHoverSentence) {
+    if ((interactionMode === 'listen' || interactionMode === 'pronounce') && onHoverSentence) {
       onHoverSentence(token.sentenceIndex);
     }
   };
 
   const handleMouseLeave = () => {
     setIsHovered(false);
-    if ((interactionMode === 'listen' || interactionMode === 'test') && onHoverSentence) {
+    if ((interactionMode === 'listen' || interactionMode === 'pronounce') && onHoverSentence) {
       onHoverSentence(null);
     }
   };
@@ -56,7 +56,7 @@ export const Word: React.FC<WordProps> = ({ token, onClick, isHighlighted = fals
 
   // Determine cursor style based on mode and status
   let cursorClass = '';
-  if (interactionMode === 'listen' || interactionMode === 'test') {
+  if (interactionMode === 'listen' || interactionMode === 'pronounce') {
     cursorClass = 'cursor-pointer'; // Finger pointer for "Listen" or "Test"
   } else if (isAnnotated) {
     cursorClass = 'cursor-help'; // Question mark for "Show Definition"
@@ -75,7 +75,7 @@ export const Word: React.FC<WordProps> = ({ token, onClick, isHighlighted = fals
         onClick={(e) => {
           e.stopPropagation();
           // Allow clicking in listen/test mode, or for word lookup in reading mode
-          if (interactionMode === 'listen' || interactionMode === 'test' || (!isAnnotated && !isLoading)) {
+          if (interactionMode === 'listen' || interactionMode === 'pronounce' || (!isAnnotated && !isLoading)) {
             onClick(e);
           }
         }}
@@ -87,7 +87,7 @@ export const Word: React.FC<WordProps> = ({ token, onClick, isHighlighted = fals
           ${hasPronunciationError ? 'text-orange-600 underline decoration-orange-400 decoration-wavy decoration-2 underline-offset-2' : ''}
           ${isAnnotated && !hasPronunciationError ? 'text-brand-800 font-semibold border-b-2 border-brand-200' : ''}
           ${!isAnnotated && !isLoading && !isError && !hasPronunciationError ? 'hover:text-brand-800 hover:bg-black/5' : ''}
-          ${(interactionMode === 'listen' || interactionMode === 'test') && !isLoading ? 'hover:underline decoration-brand-300 decoration-2 underline-offset-2' : ''}
+          ${(interactionMode === 'listen' || interactionMode === 'pronounce') && !isLoading ? 'hover:underline decoration-brand-300 decoration-2 underline-offset-2' : ''}
         `}
         title={hasPronunciationError ? pronunciationError?.issue : undefined}
       >
@@ -118,7 +118,7 @@ export const Word: React.FC<WordProps> = ({ token, onClick, isHighlighted = fals
       )}
 
       {/* Hover Tooltip - Definition Only */}
-      {isAnnotated && token.annotation && interactionMode === 'reading' && (
+      {isAnnotated && token.annotation && interactionMode === 'read' && (
         <div 
           className={`
             absolute bottom-full left-0 mb-1 z-50 whitespace-nowrap

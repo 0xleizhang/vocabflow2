@@ -33,6 +33,26 @@
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* Expandable full text */
+        .full-text-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .full-text-content.expanded {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .expand-btn {
+            transition: transform 0.2s ease;
+        }
+
+        .expand-btn.expanded {
+            transform: rotate(180deg);
+        }
     </style>
     <script>
         tailwind.config = {
@@ -195,6 +215,17 @@
             }
         }
 
+        // Toggle full text visibility
+        function toggleFullText(id) {
+            const content = document.getElementById(`fullText-${id}`);
+            const btn = document.getElementById(`expandBtn-${id}`);
+            const label = document.getElementById(`expandLabel-${id}`);
+
+            const isExpanded = content.classList.toggle('expanded');
+            btn.classList.toggle('expanded', isExpanded);
+            label.textContent = isExpanded ? 'Hide full text' : 'Show full text';
+        }
+
         // Render text cards
         function renderCards() {
             const container = document.getElementById('textCards');
@@ -202,7 +233,7 @@
             textSnippets.forEach((snippet, index) => {
                 const encodedText = encodeTextForUrl(snippet.text);
                 const card = document.createElement('div');
-                card.className = 'text-card bg-white rounded-xl shadow-md overflow-hidden border border-slate-200 animate-fade-in';
+                card.className = 'text-card bg-white rounded-xl shadow-md border border-slate-200 animate-fade-in';
                 card.style.animationDelay = `${index * 0.1}s`;
 
                 card.innerHTML = `
@@ -217,17 +248,31 @@
                             </span>
                         </div>
 
-                        <p class="text-slate-600 text-sm leading-relaxed mb-4 font-serif line-clamp-3">
+                        <p class="text-slate-600 text-sm leading-relaxed mb-2 font-serif line-clamp-3 preview-text">
                             "${snippet.preview}"
                         </p>
+
+                        <!-- Expandable full text -->
+                        <div class="full-text-content" id="fullText-${snippet.id}">
+                            <div class="bg-slate-50 rounded-lg p-4 mb-4 border border-slate-200">
+                                <p class="text-slate-700 text-sm leading-relaxed font-serif">${snippet.text}</p>
+                            </div>
+                        </div>
+
+                        <!-- Expand/Collapse button -->
+                        <button onclick="toggleFullText(${snippet.id})" class="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 mb-4 transition-colors">
+                            <svg class="w-4 h-4 expand-btn" id="expandBtn-${snippet.id}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                            <span id="expandLabel-${snippet.id}">Show full text</span>
+                        </button>
 
                         <div class="flex items-center justify-between">
                             <span class="text-xs text-slate-400">${snippet.wordCount} words</span>
                             <a href="/?t=${encodedText}"
                                class="inline-flex items-center px-4 py-2 bg-brand-500 text-white text-sm font-medium rounded-lg hover:bg-brand-600 transition-colors">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
                                 </svg>
                                 Start Practice
                             </a>
