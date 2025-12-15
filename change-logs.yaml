@@ -1,6 +1,6 @@
 project: Philingo English Reader
 description: An AI-powered English reading application with vocabulary learning and TTS features
-repository: 0xleizhang/vocabflow2
+repository: 0xleizhang/philingo
 
 changelog:
   - version: 0.9.0

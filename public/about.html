@@ -60,6 +60,42 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
     </style>
+    <script>
+        // Format relative time based on timestamp
+        function formatRelativeTime(isoString) {
+            const date = new Date(isoString);
+            const now = new Date();
+            const diffMs = now.getTime() - date.getTime();
+            const diffSec = Math.floor(diffMs / 1000);
+            const diffMin = Math.floor(diffSec / 60);
+            const diffHour = Math.floor(diffMin / 60);
+            const diffDay = Math.floor(diffHour / 24);
+
+            // If more than 1 day, show the actual date
+            if (diffDay >= 1) {
+                return date.toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric' 
+                });
+            } else if (diffHour > 0) {
+                return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
+            } else if (diffMin > 0) {
+                return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
+            } else {
+                return 'just now';
+            }
+        }
+
+        // Initialize relative times when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            const timeElements = document.querySelectorAll('[data-timestamp]');
+            timeElements.forEach(el => {
+                const timestamp = el.getAttribute('data-timestamp');
+                el.textContent = formatRelativeTime(timestamp);
+            });
+        });
+    </script>
 </head>
 <body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
     <div class="max-w-6xl mx-auto px-4 py-12">
@@ -232,8 +268,7 @@
                                 <h3 class="text-xl font-semibold text-slate-900">0.9.0</h3>
                             </div>
                             <div class="text-right text-sm">
-                                <div class="text-slate-600">just now</div>
-                                <div class="text-slate-400 text-xs mt-1">pending</div>
+                                <div class="text-slate-600" data-timestamp="2025-12-15T00:00:00.000Z">-</div>
                             </div>
                         </div>
                         
@@ -490,8 +525,7 @@
                                 <h3 class="text-xl font-semibold text-slate-900">0.8.0</h3>
                             </div>
                             <div class="text-right text-sm">
-                                <div class="text-slate-600">16 hours ago</div>
-                                <div class="text-slate-400 text-xs mt-1">pending</div>
+                                <div class="text-slate-600" data-timestamp="2025-12-14T00:00:00.000Z">-</div>
                             </div>
                         </div>
                         
@@ -603,8 +637,7 @@
                                 <h3 class="text-xl font-semibold text-slate-900">0.7.0</h3>
                             </div>
                             <div class="text-right text-sm">
-                                <div class="text-slate-600">16 hours ago</div>
-                                <div class="text-slate-400 text-xs mt-1">a76f2ce</div>
+                                <div class="text-slate-600" data-timestamp="2025-12-14T00:00:00.000Z">-</div>
                             </div>
                         </div>
                         
@@ -761,8 +794,7 @@
                                 <h3 class="text-xl font-semibold text-slate-900">0.6.0</h3>
                             </div>
                             <div class="text-right text-sm">
-                                <div class="text-slate-600">16 hours ago</div>
-                                <div class="text-slate-400 text-xs mt-1">e6ecc9c</div>
+                                <div class="text-slate-600" data-timestamp="2025-12-14T00:00:00.000Z">-</div>
                             </div>
                         </div>
                         
@@ -934,8 +966,7 @@
                                 <h3 class="text-xl font-semibold text-slate-900">0.5.0</h3>
                             </div>
                             <div class="text-right text-sm">
-                                <div class="text-slate-600">16 hours ago</div>
-                                <div class="text-slate-400 text-xs mt-1">87dd922</div>
+                                <div class="text-slate-600" data-timestamp="2025-12-14T00:00:00.000Z">-</div>
                             </div>
                         </div>
                         
@@ -1132,8 +1163,7 @@
                                 <h3 class="text-xl font-semibold text-slate-900">0.4.0</h3>
                             </div>
                             <div class="text-right text-sm">
-                                <div class="text-slate-600">16 hours ago</div>
-                                <div class="text-slate-400 text-xs mt-1">7e3599e</div>
+                                <div class="text-slate-600" data-timestamp="2025-12-14T00:00:00.000Z">-</div>
                             </div>
                         </div>
                         
@@ -1270,8 +1300,7 @@
                                 <h3 class="text-xl font-semibold text-slate-900">0.3.0</h3>
                             </div>
                             <div class="text-right text-sm">
-                                <div class="text-slate-600">16 hours ago</div>
-                                <div class="text-slate-400 text-xs mt-1">c90eefb</div>
+                                <div class="text-slate-600" data-timestamp="2025-12-14T00:00:00.000Z">-</div>
                             </div>
                         </div>
                         
@@ -1328,8 +1357,7 @@
                                 <h3 class="text-xl font-semibold text-slate-900">0.2.0</h3>
                             </div>
                             <div class="text-right text-sm">
-                                <div class="text-slate-600">Dec 13, 2025</div>
-                                <div class="text-slate-400 text-xs mt-1">64a8856</div>
+                                <div class="text-slate-600" data-timestamp="2025-12-13T00:00:00.000Z">-</div>
                             </div>
                         </div>
                         
@@ -1386,8 +1414,7 @@
                                 <h3 class="text-xl font-semibold text-slate-900">0.1.0</h3>
                             </div>
                             <div class="text-right text-sm">
-                                <div class="text-slate-600">Dec 10, 2025</div>
-                                <div class="text-slate-400 text-xs mt-1">4b6eb08</div>
+                                <div class="text-slate-600" data-timestamp="2025-12-10T00:00:00.000Z">-</div>
                             </div>
                         </div>
                         
@@ -1464,8 +1491,7 @@
                                 <h3 class="text-xl font-semibold text-slate-900">0.0.1</h3>
                             </div>
                             <div class="text-right text-sm">
-                                <div class="text-slate-600">Dec 10, 2025</div>
-                                <div class="text-slate-400 text-xs mt-1">67df5ef</div>
+                                <div class="text-slate-600" data-timestamp="2025-12-10T00:00:00.000Z">-</div>
                             </div>
                         </div>
                         
@@ -1551,7 +1577,7 @@
         <!-- Footer -->
         <div class="mt-12 text-center text-sm text-slate-500 animate-fade-in" style="animation-delay: 0.6s;">
             <p>Built with ❤️ by Lei Zhang</p>
-            <p class="mt-1">Last updated: just now</p>
+            <p class="mt-1">Last updated: <span data-timestamp="2025-12-15T00:00:00.000Z">-</span></p>
         </div>
     </div>
 </body>

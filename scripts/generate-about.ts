@@ -34,30 +34,10 @@ interface ChangelogData {
   };
 }
 
-// Function to calculate relative time
-function getRelativeTime(dateString: string): string {
+// Convert date to ISO string for frontend processing
+function getDateTimestamp(dateString: string): string {
   const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffSec = Math.floor(diffMs / 1000);
-  const diffMin = Math.floor(diffSec / 60);
-  const diffHour = Math.floor(diffMin / 60);
-  const diffDay = Math.floor(diffHour / 24);
-
-  // If more than 1 day, show the actual date
-  if (diffDay >= 1) {
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
-  } else if (diffHour > 0) {
-    return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
-  } else if (diffMin > 0) {
-    return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
-  } else {
-    return 'just now';
-  }
+  return date.toISOString();
 }
 
 // Read YAML file
@@ -128,6 +108,42 @@ const html = `<!DOCTYPE html>
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
     </style>
+    <script>
+        // Format relative time based on timestamp
+        function formatRelativeTime(isoString) {
+            const date = new Date(isoString);
+            const now = new Date();
+            const diffMs = now.getTime() - date.getTime();
+            const diffSec = Math.floor(diffMs / 1000);
+            const diffMin = Math.floor(diffSec / 60);
+            const diffHour = Math.floor(diffMin / 60);
+            const diffDay = Math.floor(diffHour / 24);
+
+            // If more than 1 day, show the actual date
+            if (diffDay >= 1) {
+                return date.toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric' 
+                });
+            } else if (diffHour > 0) {
+                return \`\${diffHour} hour\${diffHour > 1 ? 's' : ''} ago\`;
+            } else if (diffMin > 0) {
+                return \`\${diffMin} minute\${diffMin > 1 ? 's' : ''} ago\`;
+            } else {
+                return 'just now';
+            }
+        }
+
+        // Initialize relative times when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            const timeElements = document.querySelectorAll('[data-timestamp]');
+            timeElements.forEach(el => {
+                const timestamp = el.getAttribute('data-timestamp');
+                el.textContent = formatRelativeTime(timestamp);
+            });
+        });
+    </script>
 </head>
 <body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
     <div class="max-w-6xl mx-auto px-4 py-12">
@@ -234,8 +250,7 @@ const html = `<!DOCTYPE html>
                                 <h3 class="text-xl font-semibold text-slate-900">${entry.version}</h3>
                             </div>
                             <div class="text-right text-sm">
-                                <div class="text-slate-600">${getRelativeTime(entry.date)}</div>
-                                <div class="text-slate-400 text-xs mt-1">${entry.commit}</div>
+                                <div class="text-slate-600" data-timestamp="${getDateTimestamp(entry.date)}">-</div>
                             </div>
                         </div>
                         
@@ -288,7 +303,7 @@ const html = `<!DOCTYPE html>
         <!-- Footer -->
         <div class="mt-12 text-center text-sm text-slate-500 animate-fade-in" style="animation-delay: 0.6s;">
             <p>Built with ❤️ by ${data.changelog[0]?.author || 'the team'}</p>
-            <p class="mt-1">Last updated: ${data.changelog[0]?.date ? getRelativeTime(data.changelog[0].date) : 'recently'}</p>
+            <p class="mt-1">Last updated: <span data-timestamp="${data.changelog[0]?.date ? getDateTimestamp(data.changelog[0].date) : new Date().toISOString()}">-</span></p>
         </div>
     </div>
 </body>
