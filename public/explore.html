@@ -342,6 +342,9 @@
                 return;
             }
 
+            // Sort by timestamp descending (most recent first)
+            history.sort((a, b) => b.timestamp - a.timestamp);
+
             historySection.classList.remove('hidden');
             historyContainer.innerHTML = '';
 
@@ -525,14 +528,20 @@ Generate ONLY the practice text, without any additional commentary or explanatio
                     throw new Error('No text generated from API');
                 }
 
-                // Save to history
+                // Save to history with duplicate check
                 const history = loadHistory();
                 const preview = generatedText.substring(0, 100) + (generatedText.length > 100 ? '...' : '');
-                history.unshift({
-                    text: generatedText,
-                    timestamp: Date.now(),
-                    preview
-                });
+                const existingIndex = history.findIndex(item => item.text === generatedText);
+                if (existingIndex !== -1) {
+                    history[existingIndex].timestamp = Date.now();
+                    history[existingIndex].preview = preview;
+                } else {
+                    history.unshift({
+                        text: generatedText,
+                        timestamp: Date.now(),
+                        preview
+                    });
+                }
                 const trimmedHistory = history.slice(0, 50);
                 localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(trimmedHistory));
 

@@ -91,7 +91,7 @@ export default function App() {
   const [apiKey, setApiKey] = useState<string>('');
   const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
 
-  // Check if text came from URL on mount
+  // Check if text came from URL on mount and save it immediately
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const textParam = urlParams.get('t');
@@ -99,6 +99,36 @@ export default function App() {
       const decoded = decodeTextFromUrl(textParam);
       if (decoded) {
         setIsFromUrl(true);
+        
+        // Save to localStorage immediately so it persists on refresh
+        localStorage.setItem(STORAGE_KEY_TEXT, decoded);
+        
+        // Also save to history with duplicate check
+        if (decoded.trim() && decoded !== DEFAULT_TEXT) {
+          try {
+            const historyStr = localStorage.getItem(STORAGE_KEY_HISTORY);
+            const history: Array<{text: string, timestamp: number, preview: string}> = historyStr ? JSON.parse(historyStr) : [];
+            const preview = decoded.substring(0, 100) + (decoded.length > 100 ? '...' : '');
+            
+            const existingIndex = history.findIndex(item => item.text === decoded);
+            if (existingIndex !== -1) {
+              history[existingIndex].timestamp = Date.now();
+              history[existingIndex].preview = preview;
+            } else {
+              history.unshift({
+                text: decoded,
+                timestamp: Date.now(),
+                preview
+              });
+            }
+            
+            const trimmedHistory = history.slice(0, 50);
+            localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(trimmedHistory));
+          } catch (error) {
+            console.error('Failed to save to history:', error);
+          }
+        }
+        
         // Clear URL parameter after reading (optional, keeps URL clean)
         window.history.replaceState({}, '', window.location.pathname);
       }
@@ -140,10 +170,8 @@ export default function App() {
 
   const handleSaveText = () => {
     setText(inputText);
-    // Only save to localStorage if not from URL, or user explicitly edited
-    if (!isFromUrl) {
-      localStorage.setItem(STORAGE_KEY_TEXT, inputText);
-    }
+    // Always persist current practice text, including texts loaded via URL
+    localStorage.setItem(STORAGE_KEY_TEXT, inputText);
     
     // Save to history (independent of URL status)
     if (inputText.trim() && inputText !== DEFAULT_TEXT) {
@@ -157,8 +185,9 @@ export default function App() {
         // Check if this exact text already exists in history
         const existingIndex = history.findIndex(item => item.text === inputText);
         if (existingIndex !== -1) {
-          // Update timestamp of existing entry
+          // Update timestamp and preview of existing entry
           history[existingIndex].timestamp = Date.now();
+          history[existingIndex].preview = preview;
         } else {
           // Add new entry at the beginning
           history.unshift({
