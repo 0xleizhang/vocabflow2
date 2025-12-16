@@ -13,9 +13,12 @@ interface ReaderProps {
   apiKey: string;
   provider: LLMProvider;
   onMissingKey: () => void;
+  onApiStart?: (operation: string) => void;
+  onApiSuccess?: () => void;
+  onApiError?: (error: string) => void;
 }
 
-export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, provider, onMissingKey }) => {
+export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, provider, onMissingKey, onApiStart, onApiSuccess, onApiError }) => {
   const [tokens, setTokens] = useState<WordToken[]>([]);
   
   // Playback State
@@ -201,7 +204,9 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, provider, onMis
     // Try LLM TTS first if API key is available
     if (apiKey) {
       try {
+        onApiStart?.('Generating audio');
         const { data: audioData, mimeType } = await fetchTTSAudio(text, apiKey, provider);
+        onApiSuccess?.();
 
         // Check if we were stopped during the fetch
         if (isPausedRef.current) {
@@ -234,6 +239,8 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, provider, onMis
         await audio.play();
         return;
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to generate audio';
+        onApiError?.(errorMessage);
         console.warn("LLM TTS failed, falling back to browser TTS:", error);
         setIsLoadingAudio(false);
       }
@@ -242,7 +249,7 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, provider, onMis
     // Fallback to browser TTS
     setIsLoadingAudio(false);
     playSentenceWithBrowserTTS(index);
-  }, [sentences, playbackRate, apiKey, stopPlayback, handlePlaybackEnd, playSentenceWithBrowserTTS, preloadNextSentence]);
+  }, [sentences, playbackRate, apiKey, provider, stopPlayback, handlePlaybackEnd, playSentenceWithBrowserTTS, preloadNextSentence, onApiStart, onApiSuccess, onApiError]);
 
   // Public playSentence function
   const playSentence = useCallback((index: number) => {
@@ -323,7 +330,9 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, provider, onMis
       // 4. Analyze pronunciation
       setIsAnalyzing(true);
 
+      onApiStart?.('Analyzing pronunciation');
       const feedback = await analyzePronunciation(audioBlob, sentenceText, apiKey, provider);
+      onApiSuccess?.();
 
       // 5. Add feedback to list with audio URL (newest first)
       setFeedbackList(prev => [{ ...feedback, audioUrl }, ...prev]);
@@ -350,11 +359,13 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, provider, onMis
       setIsAnalyzing(false);
 
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to analyze pronunciation';
+      onApiError?.(errorMessage);
       console.error("Test mode error:", error);
       setIsRecording(false);
       setIsAnalyzing(false);
     }
-  }, [apiKey, onMissingKey, isRecording, isAnalyzing, sentences, tokens, pronunciationErrors]);
+  }, [apiKey, onMissingKey, isRecording, isAnalyzing, sentences, tokens, pronunciationErrors, onApiStart, onApiSuccess, onApiError]);
 
   // --- Combined Click Handler ---
   const handleWordClick = useCallback(async (e: React.MouseEvent, tokenIndex: number) => {
@@ -414,7 +425,9 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, provider, onMis
       const end = Math.min(tokens.length, tokenIndex + 15);
       const contextString = tokens.slice(start, end).map(t => t.text).join('');
 
+      onApiStart?.('Looking up word definition');
       const annotation = await fetchWordAnnotation(token.text, contextString, apiKey, provider);
+      onApiSuccess?.();
 
       // Save to word mastery for writing mode
       addLookedUpWord(rawText, token.text, annotation);
@@ -425,6 +438,8 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, provider, onMis
           : t
       ));
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch word definition';
+      onApiError?.(errorMessage);
       setTokens(prev => prev.map((t, i) =>
         i === tokenIndex ? { ...t, status: 'error' } : t
       ));

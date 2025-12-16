@@ -92,6 +92,13 @@ export default function App() {
   const [provider, setProvider] = useState<LLMProvider>('gemini');
   const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
 
+  // API Status State
+  const [apiStatus, setApiStatus] = useState<{
+    isLoading: boolean;
+    error: string | null;
+    operation: string | null;
+  }>({ isLoading: false, error: null, operation: null });
+
   // Check if text came from URL on mount and save it immediately
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -221,6 +228,22 @@ export default function App() {
     setMode('read');
   };
 
+  const handleApiStart = (operation: string) => {
+    setApiStatus({ isLoading: true, error: null, operation });
+  };
+
+  const handleApiSuccess = () => {
+    setApiStatus({ isLoading: false, error: null, operation: null });
+  };
+
+  const handleApiError = (error: string) => {
+    setApiStatus({ isLoading: false, error, operation: null });
+    // Auto-clear error after 5 seconds
+    setTimeout(() => {
+      setApiStatus(prev => ({ ...prev, error: null }));
+    }, 5000);
+  };
+
   return (
     <div className="flex flex-col h-screen bg-slate-50">
       <ApiKeyModal 
@@ -316,6 +339,23 @@ export default function App() {
         </div>
       </header>
 
+      {/* API Status Bar */}
+      {(apiStatus.isLoading || apiStatus.error) && (
+        <div className={`h-1 transition-all duration-300 ${
+          apiStatus.error 
+            ? 'bg-red-500' 
+            : 'bg-brand-500 animate-pulse'
+        }`}>
+          {apiStatus.error && (
+            <div className="bg-red-50 border-b border-red-200 px-4 py-2">
+              <p className="text-xs text-red-700 text-center">
+                <span className="font-semibold">Error:</span> {apiStatus.error}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -382,6 +422,9 @@ export default function App() {
                         apiKey={apiKey}
                         provider={provider}
                         onMissingKey={() => setIsKeyModalOpen(true)}
+                        onApiStart={handleApiStart}
+                        onApiSuccess={handleApiSuccess}
+                        onApiError={handleApiError}
                     />
                 </div>
             )}
