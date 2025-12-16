@@ -1,7 +1,7 @@
+import { Loader2 } from 'lucide-react';
 import React, { useState } from 'react';
-import { WordToken, WordError, InteractionMode } from '../types';
-import { Loader2, Volume2 } from 'lucide-react';
 import { playPronunciation } from '../services/ttsService';
+import { InteractionMode, WordError, WordToken } from '../types';
 
 interface WordProps {
   token: WordToken;
@@ -14,7 +14,6 @@ interface WordProps {
 
 export const Word: React.FC<WordProps> = ({ token, onClick, isHighlighted = false, interactionMode, onHoverSentence, pronunciationError }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
 
   // Handle sentence hover in listen/pronounce mode
   const handleMouseEnter = () => {
@@ -38,16 +37,10 @@ export const Word: React.FC<WordProps> = ({ token, onClick, isHighlighted = fals
 
   const handlePlay = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isPlaying) return;
-
     try {
-      setIsPlaying(true);
       await playPronunciation(token.text);
-      // Reset playing state after a short delay
-      setTimeout(() => setIsPlaying(false), 500);
     } catch (error) {
       console.error("Failed to play audio", error);
-      setIsPlaying(false);
     }
   };
 
@@ -58,12 +51,16 @@ export const Word: React.FC<WordProps> = ({ token, onClick, isHighlighted = fals
   let cursorClass = '';
   if (interactionMode === 'listen' || interactionMode === 'pronounce') {
     cursorClass = 'cursor-pointer'; // Finger pointer for "Listen" or "Test"
-  } else if (isAnnotated) {
-    cursorClass = 'cursor-help'; // Question mark for "Show Definition"
+  } else if (interactionMode === 'read') {
+    if (isAnnotated) {
+      cursorClass = 'cursor-pointer'; // Pointer for playing pronunciation in read mode
+    } else if (isLoading) {
+      cursorClass = 'cursor-wait';
+    } else if (!isError) {
+      cursorClass = 'cursor-text hover:cursor-zoom-in'; // Text or Zoom for "Look up"
+    }
   } else if (isLoading) {
     cursorClass = 'cursor-wait';
-  } else if (!isError) {
-    cursorClass = 'cursor-text hover:cursor-zoom-in'; // Text or Zoom for "Look up"
   }
 
   return (
@@ -75,8 +72,15 @@ export const Word: React.FC<WordProps> = ({ token, onClick, isHighlighted = fals
         onClick={(e) => {
           e.stopPropagation();
           // Allow clicking in listen/test mode, or for word lookup in reading mode
-          if (interactionMode === 'listen' || interactionMode === 'pronounce' || (!isAnnotated && !isLoading)) {
+          if (interactionMode === 'listen' || interactionMode === 'pronounce') {
             onClick(e);
+          } else if (interactionMode === 'read') {
+            // In read mode: if already annotated, play pronunciation; otherwise look up
+            if (isAnnotated) {
+              handlePlay(e);
+            } else if (!isLoading) {
+              onClick(e);
+            }
           }
         }}
         className={`
@@ -103,14 +107,7 @@ export const Word: React.FC<WordProps> = ({ token, onClick, isHighlighted = fals
 
       {/* Inline Pronunciation & IPA (Visible constantly after load) */}
       {isAnnotated && token.annotation && (
-        <span className="inline-flex items-center ml-1 align-middle space-x-1 bg-white border border-slate-200 rounded-md px-1.5 py-0.5 select-none h-fit my-0.5 shadow-sm">
-           <button
-             onClick={handlePlay}
-             className={`transition-colors focus:outline-none flex items-center justify-center ${isPlaying ? "text-brand-600" : "text-slate-500 hover:text-brand-600"}`}
-             title="Play pronunciation"
-           >
-             <Volume2 size={13} className={isPlaying ? "fill-current" : ""} />
-           </button>
+        <span className="inline-flex items-center ml-1 align-middle bg-white border border-slate-200 rounded-md px-1.5 py-0.5 select-none h-fit my-0.5 shadow-sm">
            <span className="text-[11px] leading-none text-slate-600 font-mono">
              {token.annotation.ipa}
            </span>

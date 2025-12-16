@@ -345,7 +345,7 @@ export default function App() {
                                 // First, normalize the text by removing excessive whitespace
                                 const normalized = inputText.replace(/\n\s*\n+/g, '\n').trim();
                                 
-                                // Split text into sentences and format with one empty line between them
+                                // Split text into sentences and format with one sentence per line (no empty lines)
                                 const formatted = normalized
                                     .split(/([.!?]+\s*)/)
                                     .reduce((acc, part, i, arr) => {
@@ -356,6 +356,7 @@ export default function App() {
                                         }
                                         return acc;
                                     }, '')
+                                    .replace(/\n\s*\n+/g, '\n')  // Remove any empty lines
                                     .trim();
                                 setInputText(formatted);
                             }}
