@@ -1,9 +1,9 @@
 import { Ear, FastForward, Languages, Loader2, Mic, Pause, PenLine, Play, Repeat, Rewind, SkipForward, Square } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { analyzePronunciation, clearTTSCache, fetchTTSAudio, fetchWordAnnotation } from '../services/geminiService';
 import { audioRecorder } from '../services/audioRecordingService';
+import { analyzePronunciation, clearTTSCache, fetchTTSAudio, fetchWordAnnotation } from '../services/llmService';
 import { addLookedUpWord } from '../services/wordMasteryService';
-import { InteractionMode, PronunciationFeedback, WordError, WordToken } from '../types';
+import { InteractionMode, LLMProvider, PronunciationFeedback, WordError, WordToken } from '../types';
 import { FeedbackPanel } from './FeedbackPanel';
 import { Word } from './Word';
 import { WritingMode } from './WritingMode';
@@ -11,10 +11,11 @@ import { WritingMode } from './WritingMode';
 interface ReaderProps {
   rawText: string;
   apiKey: string;
+  provider: LLMProvider;
   onMissingKey: () => void;
 }
 
-export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey }) => {
+export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, provider, onMissingKey }) => {
   const [tokens, setTokens] = useState<WordToken[]>([]);
   
   // Playback State
@@ -97,8 +98,8 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
     setTokens(newTokens);
     setSentences(finalSentences);
     stopPlayback(); // Reset playback if text changes
-    clearTTSCache(); // Clear audio cache when text changes
-  }, [rawText]);
+    clearTTSCache(provider); // Clear audio cache when text changes
+  }, [rawText, provider]);
 
   // --- Playback Logic ---
 
@@ -172,11 +173,11 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
     const nextIndex = currentIndex + 1;
     if (nextIndex < sentences.length) {
       // Fire and forget - just populate the cache
-      fetchTTSAudio(sentences[nextIndex], apiKey).catch(() => {
+      fetchTTSAudio(sentences[nextIndex], apiKey, provider).catch(() => {
         // Ignore preload errors
       });
     }
-  }, [apiKey, sentences]);
+  }, [apiKey, provider, sentences]);
 
   // Play using LLM TTS with fallback to browser TTS
   const playSentenceInternal = useCallback(async (index: number) => {
@@ -200,7 +201,7 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
     // Try LLM TTS first if API key is available
     if (apiKey) {
       try {
-        const { data: audioData, mimeType } = await fetchTTSAudio(text, apiKey);
+        const { data: audioData, mimeType } = await fetchTTSAudio(text, apiKey, provider);
 
         // Check if we were stopped during the fetch
         if (isPausedRef.current) {
@@ -322,7 +323,7 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
       // 4. Analyze pronunciation
       setIsAnalyzing(true);
 
-      const feedback = await analyzePronunciation(audioBlob, sentenceText, apiKey);
+      const feedback = await analyzePronunciation(audioBlob, sentenceText, apiKey, provider);
 
       // 5. Add feedback to list with audio URL (newest first)
       setFeedbackList(prev => [{ ...feedback, audioUrl }, ...prev]);
@@ -413,7 +414,7 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, onMissingKey })
       const end = Math.min(tokens.length, tokenIndex + 15);
       const contextString = tokens.slice(start, end).map(t => t.text).join('');
 
-      const annotation = await fetchWordAnnotation(token.text, contextString, apiKey);
+      const annotation = await fetchWordAnnotation(token.text, contextString, apiKey, provider);
 
       // Save to word mastery for writing mode
       addLookedUpWord(rawText, token.text, annotation);

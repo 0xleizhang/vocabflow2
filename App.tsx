@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ApiKeyModal } from './components/ApiKeyModal';
 import { Button } from './components/Button';
 import { Reader } from './components/Reader';
-import { ViewMode } from './types';
+import { LLMProvider, ViewMode } from './types';
 
 // Compress text using base64 encoding (works for most text)
 const encodeTextForUrl = (text: string): string => {
@@ -89,6 +89,7 @@ export default function App() {
 
   // API Key State
   const [apiKey, setApiKey] = useState<string>('');
+  const [provider, setProvider] = useState<LLMProvider>('gemini');
   const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
 
   // Check if text came from URL on mount and save it immediately
@@ -135,11 +136,15 @@ export default function App() {
     }
   }, []);
 
-  // Load key from localStorage on mount
+  // Load key and provider from localStorage on mount
   useEffect(() => {
     const storedKey = localStorage.getItem('gemini_api_key');
+    const storedProvider = localStorage.getItem('llm_provider') as LLMProvider | null;
     if (storedKey) {
       setApiKey(storedKey);
+    }
+    if (storedProvider && (storedProvider === 'gemini' || storedProvider === 'openai')) {
+      setProvider(storedProvider);
     } else {
         // Optional: Open modal immediately if no key is found
         // setIsKeyModalOpen(true);
@@ -163,9 +168,11 @@ export default function App() {
     }
   }, [text]);
 
-  const handleSaveKey = (key: string) => {
+  const handleSaveKey = (key: string, selectedProvider: LLMProvider) => {
     localStorage.setItem('gemini_api_key', key);
+    localStorage.setItem('llm_provider', selectedProvider);
     setApiKey(key);
+    setProvider(selectedProvider);
   };
 
   const handleSaveText = () => {
@@ -221,6 +228,7 @@ export default function App() {
         onClose={() => setIsKeyModalOpen(false)} 
         onSave={handleSaveKey}
         existingKey={apiKey}
+        existingProvider={provider}
       />
 
       {/* Header */}
@@ -317,7 +325,7 @@ export default function App() {
                         <KeyRound className="text-amber-500" />
                         <div>
                             <p className="text-sm font-medium text-amber-900">API Key Required</p>
-                            <p className="text-xs text-amber-700">You need to configure your Gemini API Key to use the analysis features.</p>
+                            <p className="text-xs text-amber-700">You need to configure your API Key to use the analysis features.</p>
                         </div>
                     </div>
                     <Button size="sm" variant="secondary" onClick={() => setIsKeyModalOpen(true)}>
@@ -328,12 +336,38 @@ export default function App() {
 
             {mode === 'edit' ? (
                 <div className="bg-white rounded-xl shadow-sm p-6 max-w-3xl mx-auto animate-in fade-in duration-300">
-                    <h2 className="text-lg font-semibold text-slate-900 mb-4">Input English Text</h2>
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-lg font-semibold text-slate-900">Input English Text</h2>
+                        <Button 
+                            size="sm" 
+                            variant="secondary"
+                            onClick={() => {
+                                // First, normalize the text by removing excessive whitespace
+                                const normalized = inputText.replace(/\n\s*\n+/g, '\n').trim();
+                                
+                                // Split text into sentences and format with one empty line between them
+                                const formatted = normalized
+                                    .split(/([.!?]+\s*)/)
+                                    .reduce((acc, part, i, arr) => {
+                                        if (i % 2 === 0 && part.trim()) {
+                                            // This is sentence content
+                                            const punctuation = arr[i + 1] || '';
+                                            return acc + part + punctuation + '\n';
+                                        }
+                                        return acc;
+                                    }, '')
+                                    .trim();
+                                setInputText(formatted);
+                            }}
+                        >
+                            Format
+                        </Button>
+                    </div>
                     <textarea
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
                         placeholder="Paste your English text here..."
-                        className="w-full h-96 p-4 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent font-serif text-lg leading-relaxed resize-none"
+                        className="w-full h-[600px] p-4 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent font-serif text-lg leading-relaxed resize-none"
                     />
                     <div className="mt-4 flex justify-between items-center text-slate-500 text-sm">
                         <span>Paste an article, a paragraph, or sentences to practice.</span>
@@ -344,7 +378,8 @@ export default function App() {
                 <div className="animate-in slide-in-from-bottom-2 duration-500">
                     <Reader 
                         rawText={text} 
-                        apiKey={apiKey} 
+                        apiKey={apiKey}
+                        provider={provider}
                         onMissingKey={() => setIsKeyModalOpen(true)}
                     />
                 </div>

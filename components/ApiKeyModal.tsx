@@ -1,28 +1,38 @@
 import { ExternalLink, Eye, EyeOff, Key, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { LLMProvider } from '../types';
 import { Button } from './Button';
 
 interface ApiKeyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (key: string) => void;
+  onSave: (key: string, provider: LLMProvider) => void;
   existingKey?: string;
+  existingProvider?: LLMProvider;
 }
 
-export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, onSave, existingKey = '' }) => {
+export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  onSave, 
+  existingKey = '',
+  existingProvider = 'gemini'
+}) => {
   const [key, setKey] = useState(existingKey);
+  const [provider, setProvider] = useState<LLMProvider>(existingProvider);
   const [showKey, setShowKey] = useState(false);
 
   useEffect(() => {
     setKey(existingKey);
-  }, [existingKey, isOpen]);
+    setProvider(existingProvider);
+  }, [existingKey, existingProvider, isOpen]);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (key.trim()) {
-      onSave(key.trim());
+      onSave(key.trim(), provider);
       onClose();
     }
   };
@@ -41,9 +51,41 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, onSav
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* Provider Selection */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-slate-700">
+              AI Provider
+            </label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setProvider('gemini')}
+                className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${
+                  provider === 'gemini'
+                    ? 'bg-brand-600 text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Google Gemini
+              </button>
+              <button
+                type="button"
+                onClick={() => setProvider('openai')}
+                className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${
+                  provider === 'openai'
+                    ? 'bg-brand-600 text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                OpenAI
+              </button>
+            </div>
+          </div>
+
+          {/* API Key Input */}
           <div className="space-y-2">
             <label htmlFor="apiKey" className="block text-sm font-medium text-slate-700">
-              Google Gemini API Key
+              {provider === 'gemini' ? 'Google Gemini API Key' : 'OpenAI API Key'}
             </label>
             <div className="relative">
               <input
@@ -51,7 +93,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, onSav
                 type={showKey ? "text" : "password"}
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
-                placeholder="AIzaSy..."
+                placeholder={provider === 'gemini' ? 'AIzaSy...' : 'sk-proj-...'}
                 className="w-full pl-4 pr-10 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all outline-none font-mono text-sm"
                 autoFocus
               />
@@ -64,22 +106,34 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, onSav
               </button>
             </div>
             <p className="text-xs text-slate-500">
-              Your key is stored locally in your browser and sent directly to Google servers.
+              Your key is stored locally in your browser and sent directly to {provider === 'gemini' ? 'Google' : 'OpenAI'} servers.
             </p>
           </div>
 
+          {/* Provider-specific help */}
           <div className="bg-blue-50 text-blue-800 text-xs p-3 rounded-lg flex items-start gap-2">
             <ExternalLink className="w-4 h-4 mt-0.5 flex-shrink-0" />
             <p>
               Don't have a key? Get one for free at{' '}
-              <a
-                href="https://aistudio.google.com/app/apikey"
-                target="_blank"
-                rel="noreferrer"
-                className="underline hover:text-blue-900 font-medium"
-              >
-                Google AI Studio
-              </a>
+              {provider === 'gemini' ? (
+                <a
+                  href="https://aistudio.google.com/app/apikey"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline hover:text-blue-900 font-medium"
+                >
+                  Google AI Studio
+                </a>
+              ) : (
+                <a
+                  href="https://platform.openai.com/api-keys"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline hover:text-blue-900 font-medium"
+                >
+                  OpenAI Platform
+                </a>
+              )}
             </p>
           </div>
 

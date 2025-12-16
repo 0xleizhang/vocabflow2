@@ -1,3 +1,5 @@
+export type LLMProvider = 'gemini' | 'openai';
+
 export interface Annotation {
   ipa: string;
   definition: string;
