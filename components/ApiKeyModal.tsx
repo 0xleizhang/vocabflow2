@@ -6,6 +6,9 @@ import { Button } from './Button';
 
 export type ApiProvider = 'gemini' | 'openai';
 
+const STORAGE_KEY_API_KEY_GEMINI = 'philingo_api_key_gemini';
+const STORAGE_KEY_API_KEY_OPENAI = 'philingo_api_key_openai';
+
 interface ApiKeyModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -15,23 +18,35 @@ interface ApiKeyModalProps {
 }
 
 export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, onSave, existingKey = '', existingProvider = 'gemini' }) => {
-  const [key, setKey] = useState(existingKey);
+  // Separate key states for each provider
+  const [geminiKey, setGeminiKey] = useState('');
+  const [openaiKey, setOpenaiKey] = useState('');
   const [provider, setProvider] = useState<ApiProvider>(existingProvider);
   const [showKey, setShowKey] = useState(false);
   const { t } = useLanguage();
 
+  // Load keys from localStorage when modal opens
   useEffect(() => {
-    setKey(existingKey);
-    setProvider(existingProvider);
-  }, [existingKey, existingProvider, isOpen]);
+    if (isOpen) {
+      setProvider(existingProvider);
+      // Load both keys from localStorage
+      const storedGeminiKey = localStorage.getItem(STORAGE_KEY_API_KEY_GEMINI) || '';
+      const storedOpenaiKey = localStorage.getItem(STORAGE_KEY_API_KEY_OPENAI) || '';
+      setGeminiKey(storedGeminiKey);
+      setOpenaiKey(storedOpenaiKey);
+    }
+  }, [existingProvider, isOpen]);
 
   if (!isOpen) return null;
 
+  // Get current key based on selected provider
+  const currentKey = provider === 'gemini' ? geminiKey : openaiKey;
+  const setCurrentKey = provider === 'gemini' ? setGeminiKey : setOpenaiKey;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (key.trim()) {
-      onSave(key.trim(), provider);
-      onSave(key.trim(), provider);
+    if (currentKey.trim()) {
+      onSave(currentKey.trim(), provider);
       onClose();
     }
   };
@@ -88,8 +103,8 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, onSav
               <input
                 id="apiKey"
                 type={showKey ? "text" : "password"}
-                value={key}
-                onChange={(e) => setKey(e.target.value)}
+                value={currentKey}
+                onChange={(e) => setCurrentKey(e.target.value)}
                 placeholder={provider === 'gemini' ? 'AIzaSy...' : 'sk-...'}
                 className="w-full pl-4 pr-10 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all outline-none font-mono text-sm"
                 autoFocus
@@ -151,7 +166,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, onSav
           </div>
 
           <div className="flex justify-end pt-2">
-            <Button type="submit" disabled={!key.trim()}>
+            <Button type="submit" disabled={!currentKey.trim()}>
               {t.apiKeyModal.saveButton}
             </Button>
           </div>

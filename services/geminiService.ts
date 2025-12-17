@@ -189,13 +189,16 @@ function saveToLocalStorage(text: string, result: TTSAudioResult): void {
  * Fetch TTS audio from Gemini API with caching (persisted to localStorage)
  * Returns audio data with mimeType
  */
-export const fetchTTSAudio = async (text: string, apiKey: string): Promise<TTSAudioResult> => {
+export const fetchTTSAudio = async (text: string, apiKey: string, voice: string = 'Puck'): Promise<TTSAudioResult> => {
   if (!apiKey) {
     throw new Error("API Key is missing. Please configure it in settings.");
   }
 
+  // Include voice in cache key
+  const cacheKey = `${text}_${voice}`;
+  
   // Check cache first (memory + localStorage)
-  const cached = getFromLocalStorage(text);
+  const cached = getFromLocalStorage(cacheKey);
   if (cached) {
     console.log("TTS cache hit:", text.trim().slice(0, 30) + "...");
     return cached;
@@ -212,7 +215,7 @@ export const fetchTTSAudio = async (text: string, apiKey: string): Promise<TTSAu
         speechConfig: {
           voiceConfig: {
             prebuiltVoiceConfig: {
-              voiceName: 'Puck'
+              voiceName: voice
             }
           }
         }
@@ -246,8 +249,8 @@ export const fetchTTSAudio = async (text: string, apiKey: string): Promise<TTSAu
 
       const result: TTSAudioResult = { data: audioData, mimeType: outputMimeType };
 
-      // Store in cache (memory + localStorage)
-      saveToLocalStorage(text, result);
+      // Store in cache with voice-specific key (memory + localStorage)
+      saveToLocalStorage(cacheKey, result);
 
       return result;
     }

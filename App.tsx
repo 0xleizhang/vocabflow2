@@ -150,32 +150,28 @@ function AppContent() {
   }, []);
 
   // Load key and provider from localStorage on mount
-  // Load key and provider from localStorage on mount
   useEffect(() => {
-    const storedProvider = localStorage.getItem('api_provider') as ApiProvider | null;
-    if (storedProvider) {
-      setApiProvider(storedProvider);
-    }
+    const storedProvider = localStorage.getItem(STORAGE_KEY_CURRENT_PROVIDER) as ApiProvider | null;
+    const provider = storedProvider || 'gemini';
+    setApiProvider(provider);
     
-    const storedKey = localStorage.getItem('gemini_api_key');
-    if (storedKey) {
-      setApiKey(storedKey);
-    } else {
-      // Default to gemini
-      const geminiKey = localStorage.getItem(STORAGE_KEY_API_KEY_GEMINI);
-      if (geminiKey) {
-        setApiKey(geminiKey);
-      }
-    }
-  }, []);
-
-  // Load corresponding API key when provider changes
-  useEffect(() => {
+    // Load the key for the current provider
     const keyToLoad = provider === 'gemini'
       ? localStorage.getItem(STORAGE_KEY_API_KEY_GEMINI)
       : localStorage.getItem(STORAGE_KEY_API_KEY_OPENAI);
+    
+    if (keyToLoad) {
+      setApiKey(keyToLoad);
+    }
+  }, []);
+
+  // Load corresponding API key when provider changes (user switches in modal)
+  useEffect(() => {
+    const keyToLoad = apiProvider === 'gemini'
+      ? localStorage.getItem(STORAGE_KEY_API_KEY_GEMINI)
+      : localStorage.getItem(STORAGE_KEY_API_KEY_OPENAI);
     setApiKey(keyToLoad || '');
-  }, [provider]);
+  }, [apiProvider]);
 
   // Create share link
   const handleCreateLink = useCallback(async () => {
@@ -195,8 +191,13 @@ function AppContent() {
   }, [text]);
 
   const handleSaveKey = (key: string, provider: ApiProvider) => {
-    localStorage.setItem('gemini_api_key', key);
-    localStorage.setItem('api_provider', provider);
+    // Save to provider-specific key
+    if (provider === 'gemini') {
+      localStorage.setItem(STORAGE_KEY_API_KEY_GEMINI, key);
+    } else {
+      localStorage.setItem(STORAGE_KEY_API_KEY_OPENAI, key);
+    }
+    localStorage.setItem(STORAGE_KEY_CURRENT_PROVIDER, provider);
     setApiKey(key);
     setApiProvider(provider);
   };
@@ -439,7 +440,7 @@ function AppContent() {
                     <Reader 
                         rawText={text} 
                         apiKey={apiKey}
-                        provider={provider}
+                        provider={apiProvider}
                         onMissingKey={() => setIsKeyModalOpen(true)}
                         onApiStart={handleApiStart}
                         onApiSuccess={handleApiSuccess}

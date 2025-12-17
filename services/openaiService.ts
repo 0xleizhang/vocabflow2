@@ -156,13 +156,16 @@ export const clearTTSCache = () => {
 /**
  * Fetch TTS audio from OpenAI API with caching
  */
-export const fetchTTSAudio = async (text: string, apiKey: string): Promise<TTSAudioResult> => {
+export const fetchTTSAudio = async (text: string, apiKey: string, voice: string = 'alloy'): Promise<TTSAudioResult> => {
   if (!apiKey) {
     throw new Error("API Key is missing. Please configure it in settings.");
   }
 
+  // Include voice in cache key
+  const cacheKey = `${text}_${voice}`;
+
   // Check cache first
-  const cached = getFromLocalStorage(text);
+  const cached = getFromLocalStorage(cacheKey);
   if (cached) {
     console.log("OpenAI TTS cache hit:", text.trim().slice(0, 30) + "...");
     return cached;
@@ -176,7 +179,7 @@ export const fetchTTSAudio = async (text: string, apiKey: string): Promise<TTSAu
   try {
     const mp3Response = await openai.audio.speech.create({
       model: "tts-1",
-      voice: "alloy",
+      voice: voice as 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer',
       input: text,
       speed: 1.0
     });
@@ -187,7 +190,7 @@ export const fetchTTSAudio = async (text: string, apiKey: string): Promise<TTSAu
       mimeType: 'audio/mpeg'
     };
 
-    saveToLocalStorage(text, result);
+    saveToLocalStorage(cacheKey, result);
     return result;
   } catch (error) {
     console.error("Error fetching OpenAI TTS audio:", error);

@@ -15,12 +15,13 @@ export interface TTSAudioResult {
 export const fetchTTSAudio = async (
   text: string,
   apiKey: string,
-  provider: LLMProvider
+  provider: LLMProvider,
+  voice?: string
 ): Promise<TTSAudioResult> => {
   if (provider === 'openai') {
-    return openaiService.fetchTTSAudio(text, apiKey);
+    return openaiService.fetchTTSAudio(text, apiKey, voice || 'alloy');
   } else {
-    return geminiService.fetchTTSAudio(text, apiKey);
+    return geminiService.fetchTTSAudio(text, apiKey, voice || 'Puck');
   }
 };
 

@@ -1,13 +1,17 @@
-import { Ear, FastForward, Languages, Loader2, Mic, Pause, PenLine, Play, Repeat, Rewind, SkipForward, Square } from 'lucide-react';
+import { Ear, FastForward, Languages, Loader2, Mic, Pause, PenLine, Play, Repeat, Rewind, SkipForward, Square, Volume2 } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { audioRecorder } from '../services/audioRecordingService';
 import { analyzePronunciation, fetchTTSAudio, fetchWordAnnotation } from '../services/llmService';
 import { addLookedUpWord } from '../services/wordMasteryService';
-import { InteractionMode, LLMProvider, PronunciationFeedback, WordError, WordToken } from '../types';
+import { GEMINI_VOICES, GeminiVoice, InteractionMode, LLMProvider, OPENAI_VOICES, OpenAIVoice, PronunciationFeedback, WordError, WordToken } from '../types';
 import { FeedbackPanel } from './FeedbackPanel';
 import { Word } from './Word';
 import { WritingMode } from './WritingMode';
+
+// Storage keys for voice preferences
+const STORAGE_KEY_GEMINI_VOICE = 'philingo_gemini_voice';
+const STORAGE_KEY_OPENAI_VOICE = 'philingo_openai_voice';
 
 interface ReaderProps {
   rawText: string;
@@ -28,6 +32,16 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, provider, onMis
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState<number>(-1);
   const [playbackRate, setPlaybackRate] = useState(1.0);
   const [sentences, setSentences] = useState<string[]>([]);
+  
+  // Voice selection state
+  const [geminiVoice, setGeminiVoice] = useState<GeminiVoice>(() => {
+    const stored = localStorage.getItem(STORAGE_KEY_GEMINI_VOICE);
+    return (stored as GeminiVoice) || 'Puck';
+  });
+  const [openaiVoice, setOpenaiVoice] = useState<OpenAIVoice>(() => {
+    const stored = localStorage.getItem(STORAGE_KEY_OPENAI_VOICE);
+    return (stored as OpenAIVoice) || 'alloy';
+  });
   
   // Interaction Mode: 'read' (lookup word), 'listen' (start TTS), or 'pronounce' (pronunciation practice)
   const [interactionMode, setInteractionMode] = useState<InteractionMode>('read');
@@ -171,17 +185,20 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, provider, onMis
     synthRef.current.speak(utterance);
   }, [sentences, playbackRate, handlePlaybackEnd]);
 
+  // Get current voice based on provider
+  const currentVoice = provider === 'openai' ? openaiVoice : geminiVoice;
+
   // Preload next sentence audio
   const preloadNextSentence = useCallback((currentIndex: number) => {
     if (!apiKey || !autoPlayRef.current) return;
     const nextIndex = currentIndex + 1;
     if (nextIndex < sentences.length) {
       // Fire and forget - just populate the cache
-      fetchTTSAudio(sentences[nextIndex], apiKey, provider).catch(() => {
+      fetchTTSAudio(sentences[nextIndex], apiKey, provider, currentVoice).catch(() => {
         // Ignore preload errors
       });
     }
-  }, [apiKey, provider, sentences]);
+  }, [apiKey, provider, sentences, currentVoice]);
 
   // Play using LLM TTS with fallback to browser TTS
   const playSentenceInternal = useCallback(async (index: number) => {
@@ -206,7 +223,7 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, provider, onMis
     if (apiKey) {
       try {
         onApiStart?.('Generating audio');
-        const { data: audioData, mimeType } = await fetchTTSAudio(text, apiKey, provider);
+        const { data: audioData, mimeType } = await fetchTTSAudio(text, apiKey, provider, currentVoice);
         onApiSuccess?.();
 
         // Check if we were stopped during the fetch
@@ -250,7 +267,7 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, provider, onMis
     // Fallback to browser TTS
     setIsLoadingAudio(false);
     playSentenceWithBrowserTTS(index);
-  }, [sentences, playbackRate, apiKey, provider, stopPlayback, handlePlaybackEnd, playSentenceWithBrowserTTS, preloadNextSentence, onApiStart, onApiSuccess, onApiError]);
+  }, [sentences, playbackRate, apiKey, provider, currentVoice, stopPlayback, handlePlaybackEnd, playSentenceWithBrowserTTS, preloadNextSentence, onApiStart, onApiSuccess, onApiError]);
 
   // Public playSentence function
   const playSentence = useCallback((index: number) => {
@@ -284,6 +301,17 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, provider, onMis
     setPlaybackRate(newRate);
     if (isPlaying && currentSentenceIndex !== -1) {
        playSentence(currentSentenceIndex);
+    }
+  };
+
+  // Handle voice change
+  const handleVoiceChange = (voice: string) => {
+    if (provider === 'openai') {
+      setOpenaiVoice(voice as OpenAIVoice);
+      localStorage.setItem(STORAGE_KEY_OPENAI_VOICE, voice);
+    } else {
+      setGeminiVoice(voice as GeminiVoice);
+      localStorage.setItem(STORAGE_KEY_GEMINI_VOICE, voice);
     }
   };
 
@@ -630,50 +658,33 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, provider, onMis
       </div>
 
       {/* Floating Audio Player Control Bar */}
-      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40 w-full max-w-2xl px-4">
-        <div className="bg-white/95 backdrop-blur-md border border-slate-200 shadow-2xl rounded-2xl p-2 md:p-3 flex items-center justify-between ring-1 ring-black/5 gap-4">
+      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40 w-full max-w-xl px-4">
+        <div className="bg-white/95 backdrop-blur-md border border-slate-200 shadow-2xl rounded-2xl p-2 md:p-3 flex flex-col gap-2 ring-1 ring-black/5">
             
-            {/* 1. Mode Switcher (Left Side) */}
-            <div className="flex bg-slate-100 p-1 rounded-lg shrink-0">
-               <button
-                 onClick={() => setInteractionMode('listen')}
-                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'listen' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                 title="Listen Mode"
-               >
-                 <Ear size={16} />
-                 <span className="hidden sm:inline">Listen</span>
-               </button>
-               <button
-                 onClick={() => setInteractionMode('read')}
-                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'read' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                 title="Read Mode"
-               >
-                 <Languages size={16} />
-                 <span className="hidden sm:inline">Read</span>
-               </button>
-               <button
-                 onClick={() => setInteractionMode('pronounce')}
-                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'pronounce' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                 title="Pronounce Mode - Practice Pronunciation"
-               >
-                 <Mic size={16} />
-                 <span className="hidden sm:inline">Pronounce</span>
-               </button>
-               <button
-                 onClick={() => setInteractionMode('write')}
-                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'write' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                 title="Write Mode - Fill in the blanks"
-               >
-                 <PenLine size={16} />
-                 <span className="hidden sm:inline">Write</span>
-               </button>
-            </div>
+            {/* 1. Playback Controls (Top Row) */}
+            <div className="flex items-center justify-between gap-2">
+                {/* Voice Selector - only show when API key is configured */}
+                {apiKey && (
+                    <div className="flex items-center gap-1">
+                        <Volume2 size={14} className="text-slate-400" />
+                        <select
+                            value={currentVoice}
+                            onChange={(e) => handleVoiceChange(e.target.value)}
+                            className="text-xs bg-slate-50 border border-slate-200 rounded-md px-1.5 py-1 text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-1 focus:ring-brand-500 cursor-pointer"
+                            title="Select voice"
+                        >
+                            {provider === 'openai' 
+                                ? OPENAI_VOICES.map(v => (
+                                    <option key={v.id} value={v.id}>{v.name}</option>
+                                  ))
+                                : GEMINI_VOICES.map(v => (
+                                    <option key={v.id} value={v.id}>{v.name}</option>
+                                  ))
+                            }
+                        </select>
+                    </div>
+                )}
 
-            {/* Separator */}
-            <div className="w-px h-8 bg-slate-200 hidden sm:block"></div>
-
-            {/* 2. Playback Controls (Center/Right) */}
-            <div className="flex flex-1 items-center justify-between gap-2 md:gap-4">
                 {/* Speed */}
                 <div className="flex items-center space-x-0.5">
                     <button
@@ -730,6 +741,42 @@ export const Reader: React.FC<ReaderProps> = ({ rawText, apiKey, provider, onMis
                         {isLoadingAudio ? <Loader2 size={20} className="animate-spin" /> : isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-0.5" />}
                      </button>
                 </div>
+            </div>
+
+            {/* 2. Mode Switcher (Bottom Row) */}
+            <div className="flex bg-slate-100 p-1 rounded-lg justify-center">
+               <button
+                 onClick={() => setInteractionMode('listen')}
+                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'listen' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                 title="Listen Mode"
+               >
+                 <Ear size={16} />
+                 <span className="hidden sm:inline">Listen</span>
+               </button>
+               <button
+                 onClick={() => setInteractionMode('read')}
+                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'read' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                 title="Read Mode"
+               >
+                 <Languages size={16} />
+                 <span className="hidden sm:inline">Read</span>
+               </button>
+               <button
+                 onClick={() => setInteractionMode('pronounce')}
+                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'pronounce' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                 title="Pronounce Mode - Practice Pronunciation"
+               >
+                 <Mic size={16} />
+                 <span className="hidden sm:inline">Pronounce</span>
+               </button>
+               <button
+                 onClick={() => setInteractionMode('write')}
+                 className={`p-2 rounded-md flex items-center gap-2 text-xs font-semibold transition-all ${interactionMode === 'write' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                 title="Write Mode - Fill in the blanks"
+               >
+                 <PenLine size={16} />
+                 <span className="hidden sm:inline">Write</span>
+               </button>
             </div>
         </div>
       </div>

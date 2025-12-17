@@ -1,5 +1,27 @@
 export type LLMProvider = 'gemini' | 'openai';
 
+// TTS Voice types for each provider
+export type GeminiVoice = 'Puck' | 'Charon' | 'Kore' | 'Fenrir' | 'Aoede';
+export type OpenAIVoice = 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
+
+// Voice display names
+export const GEMINI_VOICES: { id: GeminiVoice; name: string }[] = [
+  { id: 'Puck', name: 'Puck' },
+  { id: 'Charon', name: 'Charon' },
+  { id: 'Kore', name: 'Kore' },
+  { id: 'Fenrir', name: 'Fenrir' },
+  { id: 'Aoede', name: 'Aoede' },
+];
+
+export const OPENAI_VOICES: { id: OpenAIVoice; name: string }[] = [
+  { id: 'alloy', name: 'Alloy' },
+  { id: 'echo', name: 'Echo' },
+  { id: 'fable', name: 'Fable' },
+  { id: 'onyx', name: 'Onyx' },
+  { id: 'nova', name: 'Nova' },
+  { id: 'shimmer', name: 'Shimmer' },
+];
+
 export interface Annotation {
   ipa: string;
   definition: string;  // 英汉释义
