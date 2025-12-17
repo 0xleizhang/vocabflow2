@@ -2,10 +2,10 @@ import { Check, RotateCcw, Trophy } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
 import {
-    getMasteryThreshold,
-    getUnmasteredWords,
-    markWordCorrect,
-    resetWordProgress
+  getMasteryThreshold,
+  getUnmasteredWords,
+  markWordCorrect,
+  resetWordProgress
 } from '../services/wordMasteryService';
 import { WordMastery, WordToken } from '../types';
 
@@ -225,7 +225,6 @@ export const WritingMode: React.FC<WritingModeProps> = ({ rawText, tokens }) => 
                         ${getStatusClass(blank.status)}
                       `}
                       style={{ width: inputWidth }}
-                      placeholder={t.writingMode.inputPlaceholder}
                     />
                     {/* Hint tooltip */}
                     <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">

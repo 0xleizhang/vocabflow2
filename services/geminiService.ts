@@ -409,19 +409,20 @@ export const fetchWordAnnotation = async (word: string, contextSentence: string,
     const prompt = `
       Analyze the English word "${word}" in context: "${contextSentence}".
 
-      Provide comprehensive information in ${targetLang}:
+      Provide comprehensive information:
       1. IPA phonetic transcription (British or American)
-      2. Concise definition in ${targetLang} (max 10 chars) for this context
+      2. Concise English definition (max 10 chars) for this context
       3. English dictionary definition (concise, 1 sentence)
       4. Syllable breakdown (e.g., "hel-lo", "com-mu-ni-ca-tion")
-      5. Word roots (e.g., "dict (say, speak)") - provide in ${targetLang}
-      6. Affixes (e.g., "pre- (before), -ion (noun suffix)") - provide in ${targetLang}
-      7. 2-4 synonyms (if any)
-      8. Synonym analysis in ${targetLang} (brief explanation of differences, if applicable)
-      9. Antonyms (optional, if clear antonyms exist)
-      10. Associated words for memory (optional, thematically related words)
-      11. Common phrases (optional, 2-3 common collocations or phrases)
+      5. Word roots in English (e.g., "dict (say, speak)")
+      6. Affixes in English (e.g., "pre- (before), -ion (noun suffix)")
+      7. 2-4 synonyms in ENGLISH words (e.g., "happy, joyful, cheerful")
+      8. Synonym analysis in ${targetLang} (brief explanation of differences in ${targetLang}, if applicable)
+      9. Antonyms in ENGLISH words (optional, if clear antonyms exist)
+      10. Associated words in ENGLISH (optional, thematically related English words)
+      11. Common phrases in English (optional, 2-3 common collocations or phrases)
 
+      IMPORTANT: ONLY synonym analysis (field 8) should be in ${targetLang}. All other fields must be in English.
       Return complete JSON. Use empty string "" for missing text fields, empty array [] for missing list fields.
     `;
 
