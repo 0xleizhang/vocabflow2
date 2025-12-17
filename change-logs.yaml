@@ -3,6 +3,162 @@ description: An AI-powered English reading application with vocabulary learning 
 repository: 0xleizhang/philingo
 
 changelog:
+  - version: 1.0.3
+    date: 2025-12-17
+    commit: 2ca7b97
+    author: Lei Zhang
+    type: feature
+    summary: Enhanced tooltip interaction and improved word annotation details for better user experience
+    changes:
+      - area: WordTooltip Component
+        description: Added comprehensive word information display with better organization
+        improvements:
+          - Added English dictionary definition display
+          - Implemented syllable breakdown visualization
+          - Added word roots and affixes information
+          - Included synonym analysis section
+          - Added antonyms display
+          - Added word associations for memory aid
+          - Included common phrases and collocations
+          - Better visual separation of information sections with dividers
+          - Used monospace font for IPA transcription for clarity
+          - Improved tooltip layout with proper spacing and typography
+
+      - area: Word Component
+        description: Enhanced tooltip interaction and audio playback
+        improvements:
+          - Removed tooltip hide on play to keep information visible
+          - Added audio playback initialization on tooltip open
+          - Improved tooltip open/close logic for better state management
+          - Enhanced user experience by maintaining tooltip visibility during audio playback
+          - Refactored handleToggleTooltip to handle both open and audio logic
+
+      - area: Service Layer (Gemini & OpenAI)
+        description: Updated annotation prompts for comprehensive information
+        improvements:
+          - Enhanced prompt clarity for field requirements
+          - Specified exact language requirements for each field
+          - Improved instructions for synonym analysis
+          - Better handling of optional fields (antonyms, associations, phrases)
+          - Added explicit examples for each field type
+          - Ensured consistent response format across providers
+
+  - version: 1.0.2
+    date: 2025-12-17
+    commit: 2386548
+    author: Lei Zhang
+    type: feature
+    summary: Updated word annotation prompts to provide comprehensive information in English
+    changes:
+      - area: Annotation Prompts
+        description: Standardized annotation data format across providers
+        improvements:
+          - Changed annotation fields to use primarily English content
+          - Only definition and synonym analysis remain in target language
+          - Roots, affixes, synonyms, antonyms, associations now in English
+          - Added explicit language specifications in prompts
+          - Improved clarity of field requirements
+          - Better support for multi-language learning
+
+      - area: Service Layer Consistency
+        description: Synchronized prompt format between Gemini and OpenAI services
+        improvements:
+          - Unified prompt structure across both providers
+          - Consistent field descriptions and requirements
+          - Matching example formats for better results
+          - Improved prompt clarity for AI models
+
+      - area: WritingMode Component
+        description: Minor code quality improvements
+        improvements:
+          - Cleaned up import statements
+          - Improved code organization
+
+  - version: 1.0.1
+    date: 2025-12-17
+    commit: 676026a
+    author: Lei Zhang
+    type: feature
+    summary: Implemented language selection and enhanced word annotation features with multi-language support
+    changes:
+      - area: Language Selection System
+        description: Added comprehensive language switching capability
+        improvements:
+          - Created LanguageSelector component with Chinese, Japanese, and Vietnamese support
+          - Implemented LanguageContext for global language state management
+          - Language preference persisted to localStorage
+          - All UI text dynamically switches based on selected language
+          - Smooth language transition without page reload
+
+      - area: Translations System
+        description: Built comprehensive translation infrastructure
+        improvements:
+          - Created translations.ts with complete translations for Chinese, Japanese, and Vietnamese
+          - Translated all UI elements including buttons, placeholders, error messages
+          - Added mode-specific terminology for read, listen, pronounce, write modes
+          - Translated feedback panel and API key modal content
+          - Included word annotation field labels and descriptions
+          - Language-specific error messages and warnings
+
+      - area: WordTooltip Enhancement
+        description: Significantly expanded word annotation information display
+        improvements:
+          - Added English dictionary definition field
+          - Implemented syllable breakdown display
+          - Added word roots section with etymology
+          - Included affixes (prefixes and suffixes) information
+          - Added synonyms list with analysis
+          - Included antonyms section
+          - Added word associations for memory aids
+          - Included common phrases and collocations
+          - Better organized layout with proper sections and dividers
+          - All labels respect selected UI language
+
+      - area: Service Layer Updates
+        description: Enhanced annotation services to support multi-language
+        improvements:
+          - Updated fetchWordAnnotation to accept language parameter
+          - Updated analyzePronunciation to accept language parameter
+          - Modified prompts to request language-specific responses
+          - Enhanced Gemini service with language support
+          - Enhanced OpenAI service with language support
+          - Added i18nService.ts for language code mapping
+
+      - area: API Key Modal Enhancement
+        description: Improved API key configuration interface
+        improvements:
+          - UI text respects selected language
+          - Provider-specific instructions in multiple languages
+          - Better user guidance for API key acquisition
+
+      - area: Reader Component Integration
+        description: Updated Reader to support language-aware operations
+        improvements:
+          - Passes language parameter to all annotation calls
+          - Passes language parameter to pronunciation analysis
+          - Language context integrated throughout component
+
+      - area: WritingMode Component
+        description: Fully internationalized writing mode interface
+        improvements:
+          - All UI text uses translation system
+          - Mode instructions in selected language
+          - Progress indicators in selected language
+          - Success messages in selected language
+
+      - area: Type Definitions
+        description: Extended types for multi-language support
+        improvements:
+          - Added Language type for supported languages
+          - Extended Annotation interface with new fields
+          - Updated service function signatures
+
+      - area: Configuration Files
+        description: Added project configuration files
+        improvements:
+          - Added .nvmrc for Node version specification
+          - Updated .claude/settings.local.json
+
   - version: 1.0.0
     date: 2025-12-16
     commit: 1bc606a
